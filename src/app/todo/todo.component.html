@@ -1,6 +1,6 @@
 <h1>ToDo!</h1>
 
-@if (store.searchBusy()) {
+@if (store.busy()) {
 <mat-progress-bar mode="indeterminate" />
 }
 
@@ -12,12 +12,12 @@
   }
 </ul>
 
-<form #todoForm="ngForm" [formGroup]="form">
+<form #addNgForm="ngForm" [formGroup]="addForm">
   <mat-form-field>
     <mat-label>Title</mat-label>
     <input matInput type="text" formControlName="title" />
   </mat-form-field>
-  <button type="submit" mat-stroked-button [disabled]="!form.valid">
+  <button type="submit" mat-stroked-button [disabled]="!addForm.valid">
     create
   </button>
 </form>

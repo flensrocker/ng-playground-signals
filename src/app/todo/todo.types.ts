@@ -25,6 +25,14 @@ export type SearchTodoResponse = {
   readonly todos: readonly SearchTodoItem[];
 };
 
+export type AddTodoRequest = {
+  readonly title: string;
+};
+export type AddTodoResponse = {
+  readonly id: string;
+};
+
 export abstract class TodoService {
   abstract search(request: SearchTodoRequest): Observable<SearchTodoResponse>;
+  abstract add(request: AddTodoRequest): Observable<AddTodoResponse>;
 }

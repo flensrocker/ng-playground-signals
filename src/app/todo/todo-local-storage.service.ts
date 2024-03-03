@@ -3,6 +3,8 @@ import { Provider } from '@angular/core';
 import { Observable, delay, map, of } from 'rxjs';
 
 import {
+  AddTodoRequest,
+  AddTodoResponse,
   SearchTodoRequest,
   SearchTodoResponse,
   TodoEntity,
@@ -34,13 +36,32 @@ const filterTodos = (filter: SearchTodoRequest) => {
 export class LocalStorageTodoService extends TodoService {
   readonly #storageKey = 'todos';
 
+  #getTodoSchema(): TodoSchema {
+    try {
+      const schemaJson = localStorage.getItem(this.#storageKey);
+      const todoSchema: TodoSchema =
+        schemaJson == null ? initialTodoSchema : JSON.parse(schemaJson);
+      return todoSchema;
+    } catch (err) {
+      console.error(err);
+      return initialTodoSchema;
+    }
+  }
+
+  #setTodoSchema(todoSchema: TodoSchema) {
+    try {
+      const schemaJson = JSON.stringify(todoSchema);
+      localStorage.setItem(this.#storageKey, schemaJson);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   override search(request: SearchTodoRequest): Observable<SearchTodoResponse> {
     return of(request).pipe(
       delay(200),
       map((request) => {
-        const schemaJson = localStorage.getItem(this.#storageKey);
-        const todoSchema: TodoSchema =
-          schemaJson == null ? initialTodoSchema : JSON.parse(schemaJson);
+        const todoSchema = this.#getTodoSchema();
 
         const allTodos = todoSchema.todoIds
           .map((todoId) => todoSchema.todoMap[todoId])
@@ -58,6 +79,34 @@ export class LocalStorageTodoService extends TodoService {
             title: todo.title,
             status: todo.status,
           })),
+        };
+      })
+    );
+  }
+
+  override add(request: AddTodoRequest): Observable<AddTodoResponse> {
+    return of(request).pipe(
+      delay(100),
+      map((request) => {
+        const todo: TodoEntity = {
+          id: crypto.randomUUID(),
+          title: request.title,
+          status: 'OPEN',
+          description: '',
+        };
+
+        const todoSchema = this.#getTodoSchema();
+        this.#setTodoSchema({
+          ...todoSchema,
+          todoIds: [...todoSchema.todoIds, todo.id],
+          todoMap: {
+            ...todoSchema.todoMap,
+            [todo.id]: todo,
+          },
+        });
+
+        return {
+          id: todo.id,
         };
       })
     );

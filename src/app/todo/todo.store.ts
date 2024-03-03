@@ -12,6 +12,8 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { catchError, map, of, pipe, switchMap, tap } from 'rxjs';
 
 import {
+  AddTodoRequest,
+  AddTodoResponse,
   SearchTodoRequest,
   SearchTodoResponse,
   TodoService,
@@ -22,6 +24,10 @@ export type TodoState = {
   readonly searchResponse: SearchTodoResponse | null;
   readonly searchBusy: boolean;
   readonly searchError: string | null;
+  readonly addRequest: AddTodoRequest | null;
+  readonly addResponse: AddTodoResponse | null;
+  readonly addBusy: boolean;
+  readonly addError: string | null;
 };
 
 const initialSearchTodoRequest: SearchTodoRequest = {
@@ -36,12 +42,17 @@ const initialState: TodoState = {
   searchResponse: null,
   searchBusy: false,
   searchError: null,
+  addRequest: null,
+  addResponse: null,
+  addBusy: false,
+  addError: null,
 };
 
 export const TodoStore = signalStore(
   withState(initialState),
   withComputed((store) => ({
     todos: computed(() => store.searchResponse()?.todos ?? []),
+    busy: computed(() => store.searchBusy() || store.addBusy()),
   })),
   withMethods((store) => {
     const todoService = inject(TodoService);
@@ -68,6 +79,31 @@ export const TodoStore = signalStore(
           ),
           tap((state) => {
             patchState(store, { ...state, searchBusy: false });
+          })
+        )
+      ),
+      connectAddTodo: rxMethod<AddTodoRequest>(
+        pipe(
+          tap(() => patchState(store, { addBusy: true })),
+          switchMap((request) =>
+            todoService.add(request).pipe(
+              map(
+                (addResponse): Partial<TodoState> => ({
+                  searchRequest: { ...store.searchRequest() },
+                  addResponse,
+                  addError: null,
+                })
+              ),
+              catchError((err) =>
+                of({
+                  addResponse: null,
+                  addError: `${err}`,
+                } satisfies Partial<TodoState>)
+              )
+            )
+          ),
+          tap((state) => {
+            patchState(store, { ...state, addBusy: false });
           })
         )
       ),

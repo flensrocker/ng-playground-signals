@@ -1,4 +1,5 @@
 import { Component, inject, viewChild } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormGroup,
@@ -14,6 +15,10 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoStore } from './todo.store';
+import { filter, map, switchMap } from 'rxjs';
+import { AddTodoRequest } from './todo.types';
+
+const isNotNull = <T>(obj: T | null | undefined): obj is T => obj != null;
 
 @Component({
   standalone: true,
@@ -29,12 +34,25 @@ import { TodoStore } from './todo.store';
   providers: [provideLocalStorageTodoService(), TodoStore],
 })
 export class TodoComponent {
-  readonly form = new FormGroup({
+  readonly store = inject(TodoStore);
+
+  readonly addForm = new FormGroup({
     title: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required],
     }),
   });
-  readonly store = inject(TodoStore);
-  readonly ngForm = viewChild<FormGroupDirective>('todoForm');
+  readonly addNgForm = viewChild<FormGroupDirective>('addNgForm');
+
+  constructor() {
+    const addTodoRequest$ = toObservable(this.addNgForm).pipe(
+      filter(isNotNull),
+      switchMap((addNgForm) =>
+        addNgForm.ngSubmit.pipe(
+          map((): AddTodoRequest => this.addForm.getRawValue())
+        )
+      )
+    );
+    this.store.connectAddTodo(addTodoRequest$);
+  }
 }
