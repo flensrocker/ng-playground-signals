@@ -1,1 +1,23 @@
-<h1>TODO</h1>
+<h1>ToDo!</h1>
+
+@if (store.searchBusy()) {
+<mat-progress-bar mode="indeterminate" />
+}
+
+<ul>
+  @for (todo of store.todos(); track todo.id) {
+  <li>{{ todo.title }}</li>
+  } @empty {
+  <li>No Todos!</li>
+  }
+</ul>
+
+<form #todoForm="ngForm" [formGroup]="form">
+  <mat-form-field>
+    <mat-label>Title</mat-label>
+    <input matInput type="text" formControlName="title" />
+  </mat-form-field>
+  <button type="submit" mat-stroked-button [disabled]="!form.valid">
+    create
+  </button>
+</form>
