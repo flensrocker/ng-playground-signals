@@ -76,8 +76,8 @@ export const TodoStore = signalStore(
               )
             )
           ),
-          tap(() => {
-            patchState(store, setBusy('search', false));
+          tap((state) => {
+            patchState(store, state, setBusy('search', false));
           })
         )
       ),
@@ -101,8 +101,8 @@ export const TodoStore = signalStore(
               )
             )
           ),
-          tap(() => {
-            patchState(store, setBusy('add', false));
+          tap((state) => {
+            patchState(store, state, setBusy('add', false));
           })
         )
       ),
