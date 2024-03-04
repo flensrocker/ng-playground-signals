@@ -1,4 +1,4 @@
-import { Component, inject, viewChild } from '@angular/core';
+import { Component, effect, inject, viewChild } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -42,5 +42,10 @@ export class TodoComponent {
 
   constructor() {
     this.store.connectAddTodo(toFormSubmit(this.addNgForm));
+    effect(() => {
+      if (this.store.addResponse() != null) {
+        this.addForm.reset();
+      }
+    });
   }
 }

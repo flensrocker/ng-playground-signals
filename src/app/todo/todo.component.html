@@ -19,7 +19,11 @@
     <mat-label>Title</mat-label>
     <input matInput type="text" formControlName="title" />
   </mat-form-field>
-  <button type="submit" mat-stroked-button [disabled]="!addForm.valid">
+  <button
+    type="submit"
+    mat-stroked-button
+    [disabled]="!addForm.valid || store.addBusy()"
+  >
     create
   </button>
 </form>
