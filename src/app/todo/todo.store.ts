@@ -47,8 +47,8 @@ const initialState: TodoState = {
 
 export const TodoStore = signalStore(
   withState(initialState),
-  withBusy({ prop: 'search' }),
-  withBusy({ prop: 'add' }),
+  withBusy('search'),
+  withBusy('add'),
   withComputed((store) => ({
     todos: computed(() => store.searchResponse()?.todos ?? []),
     busy: computed(() => store.searchBusy() || store.addBusy()),
@@ -59,7 +59,7 @@ export const TodoStore = signalStore(
     return {
       searchTodos: rxMethod<SearchTodoRequest>(
         pipe(
-          tap(() => patchState(store, setBusy(true, 'search'))),
+          tap(() => patchState(store, setBusy('search', true))),
           switchMap((request) =>
             todoService.search(request).pipe(
               map(
@@ -77,13 +77,13 @@ export const TodoStore = signalStore(
             )
           ),
           tap(() => {
-            patchState(store, setBusy(false, 'search'));
+            patchState(store, setBusy('search', false));
           })
         )
       ),
       connectAddTodo: rxMethod<AddTodoRequest>(
         pipe(
-          tap(() => patchState(store, setBusy(true, 'add'))),
+          tap(() => patchState(store, setBusy('add', true))),
           switchMap((request) =>
             todoService.add(request).pipe(
               map(
@@ -102,7 +102,7 @@ export const TodoStore = signalStore(
             )
           ),
           tap(() => {
-            patchState(store, setBusy(false, 'add'));
+            patchState(store, setBusy('add', false));
           })
         )
       ),

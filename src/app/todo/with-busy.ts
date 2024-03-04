@@ -1,5 +1,4 @@
 import {
-  PartialStateUpdater,
   SignalStoreFeature,
   signalStoreFeature,
   withState,
@@ -9,17 +8,17 @@ export type BusyState = {
   readonly busy: boolean;
 };
 
-type NamedBusyState<Prop extends string> = {
+export type NamedBusyState<Prop extends string> = {
   [K in Prop as `${K}Busy`]: BusyState['busy'];
 };
 
-function getBusyStateKeys(prop?: string) {
+const getBusyStateKeys = (prop?: string) => {
   const busyStateKey = prop == null ? 'busy' : `${prop}Busy`;
 
   return {
     busyStateKey,
   };
-}
+};
 
 export function withBusy(): SignalStoreFeature<
   {
@@ -33,9 +32,9 @@ export function withBusy(): SignalStoreFeature<
     methods: NonNullable<unknown>;
   }
 >;
-export function withBusy<Prop extends string>(config: {
-  prop: Prop;
-}): SignalStoreFeature<
+export function withBusy<Prop extends string>(
+  prop: Prop
+): SignalStoreFeature<
   {
     state: NonNullable<unknown>;
     signals: NonNullable<unknown>;
@@ -47,10 +46,8 @@ export function withBusy<Prop extends string>(config: {
     methods: NonNullable<unknown>;
   }
 >;
-export function withBusy<Prop extends string>(config?: {
-  prop: Prop;
-}): SignalStoreFeature {
-  const { busyStateKey } = getBusyStateKeys(config?.prop);
+export function withBusy<Prop extends string>(prop?: Prop): SignalStoreFeature {
+  const { busyStateKey } = getBusyStateKeys(prop);
 
   return signalStoreFeature(
     withState({
@@ -59,18 +56,24 @@ export function withBusy<Prop extends string>(config?: {
   );
 }
 
-export function setBusy(busy: boolean): PartialStateUpdater<BusyState>;
+export function setBusy(busy: boolean): BusyState;
 export function setBusy<Prop extends string>(
-  busy: boolean,
-  prop: Prop
-): PartialStateUpdater<NamedBusyState<Prop>>;
+  prop: Prop,
+  busy: boolean
+): NamedBusyState<Prop>;
 export function setBusy<Prop extends string>(
-  busy: boolean,
-  prop?: Prop
-): PartialStateUpdater<NamedBusyState<Prop> | BusyState> {
-  const { busyStateKey } = getBusyStateKeys(prop);
+  prop: Prop | boolean,
+  busy?: boolean
+): NamedBusyState<Prop> | BusyState {
+  if (typeof prop === 'string') {
+    const { busyStateKey } = getBusyStateKeys(prop);
+    return {
+      [busyStateKey]: busy ?? false,
+    } as NamedBusyState<Prop>;
+  }
 
-  return () => ({
-    [busyStateKey]: busy,
-  });
+  const { busyStateKey } = getBusyStateKeys();
+  return {
+    [busyStateKey]: prop,
+  } as BusyState;
 }
