@@ -2,6 +2,8 @@
 
 @if (store.busy()) {
 <mat-progress-bar mode="indeterminate" />
+} @if (store.searchHasError()) {
+<mat-error>{{ store.searchError() }}</mat-error>
 }
 
 <ul>
@@ -21,3 +23,7 @@
     create
   </button>
 </form>
+
+@if (store.addHasError()) {
+<mat-error>{{ store.addError() }}</mat-error>
+}

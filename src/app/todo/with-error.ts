@@ -1,6 +1,8 @@
+import { Signal, computed } from '@angular/core';
 import {
   SignalStoreFeature,
   signalStoreFeature,
+  withComputed,
   withState,
 } from '@ngrx/signals';
 
@@ -20,6 +22,23 @@ const getErrorStateKeys = (collection?: string) => {
   };
 };
 
+type ErrorSignals = {
+  readonly hasError: Signal<boolean>;
+};
+
+type NamedErrorSignals<Collection extends string> = {
+  [K in Collection as `${K}HasError`]: ErrorSignals['hasError'];
+};
+
+const getErrorSignalKeys = (collection?: string) => {
+  const hasErrorSignalKey =
+    collection == null ? 'hasError' : `${collection}HasError`;
+
+  return {
+    hasErrorSignalKey,
+  };
+};
+
 export function withError(): SignalStoreFeature<
   {
     state: NonNullable<unknown>;
@@ -28,7 +47,7 @@ export function withError(): SignalStoreFeature<
   },
   {
     state: ErrorState;
-    signals: NonNullable<unknown>;
+    signals: ErrorSignals;
     methods: NonNullable<unknown>;
   }
 >;
@@ -42,7 +61,7 @@ export function withError<Collection extends string>(
   },
   {
     state: NamedErrorState<Collection>;
-    signals: NonNullable<unknown>;
+    signals: NamedErrorSignals<Collection>;
     methods: NonNullable<unknown>;
   }
 >;
@@ -50,10 +69,18 @@ export function withError<Collection extends string>(
   collection?: Collection
 ): SignalStoreFeature {
   const { errorStateKey } = getErrorStateKeys(collection);
+  const { hasErrorSignalKey } = getErrorSignalKeys(collection);
 
   return signalStoreFeature(
     withState({
       [errorStateKey]: null,
+    }),
+    withComputed((store: Record<string, Signal<unknown>>) => {
+      const error = store[errorStateKey] as Signal<string | null>;
+
+      return {
+        [hasErrorSignalKey]: computed(() => error() != null),
+      };
     })
   );
 }
@@ -70,13 +97,13 @@ export function setError<Collection extends string>(
   if (typeof error === 'string') {
     const { errorStateKey } = getErrorStateKeys(collection);
     return {
-      [errorStateKey]: error,
+      [errorStateKey]: error.length === 0 ? null : error,
     } as NamedErrorState<Collection>;
   }
 
   const { errorStateKey } = getErrorStateKeys();
   return {
-    [errorStateKey]: collection,
+    [errorStateKey]: collection.length === 0 ? null : collection,
   } as ErrorState;
 }
 

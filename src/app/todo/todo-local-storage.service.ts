@@ -61,6 +61,10 @@ export class LocalStorageTodoService extends TodoService {
     return of(request).pipe(
       delay(200),
       map((request) => {
+        if (request.filter.startsWith('err')) {
+          throw new Error('Error while searching todos');
+        }
+
         const todoSchema = this.#getTodoSchema();
 
         const matchingTodos = todoSchema.todoIds
@@ -88,6 +92,10 @@ export class LocalStorageTodoService extends TodoService {
     return of(request).pipe(
       delay(100),
       map((request) => {
+        if (request.title.startsWith('err')) {
+          throw new Error('Error while adding todo');
+        }
+
         const todo: TodoEntity = {
           id: crypto.randomUUID(),
           title: request.title,

@@ -18,16 +18,21 @@ import {
   SearchTodoResponse,
   TodoService,
 } from './todo.types';
-import { setBusy, withBusy } from './with-busy';
+import { NamedBusyState, setBusy, withBusy } from './with-busy';
+import { NamedErrorState, clearError, setError, withError } from './with-error';
 
 export type TodoState = {
   readonly searchRequest: SearchTodoRequest;
   readonly searchResponse: SearchTodoResponse | null;
-  readonly searchError: string | null;
   readonly addRequest: AddTodoRequest | null;
   readonly addResponse: AddTodoResponse | null;
-  readonly addError: string | null;
 };
+
+type State = TodoState &
+  NamedBusyState<'search'> &
+  NamedErrorState<'search'> &
+  NamedBusyState<'add'> &
+  NamedErrorState<'add'>;
 
 const initialSearchTodoRequest: SearchTodoRequest = {
   filter: '',
@@ -39,16 +44,16 @@ const initialSearchTodoRequest: SearchTodoRequest = {
 const initialState: TodoState = {
   searchRequest: initialSearchTodoRequest,
   searchResponse: null,
-  searchError: null,
   addRequest: null,
   addResponse: null,
-  addError: null,
 };
 
 export const TodoStore = signalStore(
-  withState(initialState),
+  withState<TodoState>(initialState),
   withBusy('search'),
+  withError('search'),
   withBusy('add'),
+  withError('add'),
   withComputed((store) => ({
     todos: computed(() => store.searchResponse()?.todos ?? []),
     busy: computed(() => store.searchBusy() || store.addBusy()),
@@ -63,16 +68,17 @@ export const TodoStore = signalStore(
           switchMap((request) =>
             todoService.search(request).pipe(
               map(
-                (searchResponse): Partial<TodoState> => ({
-                  searchResponse,
-                  searchError: null,
-                })
+                (searchResponse) =>
+                  ({
+                    searchResponse,
+                    ...clearError('search'),
+                  } satisfies Partial<State>)
               ),
               catchError((err) =>
                 of({
                   searchResponse: null,
-                  searchError: `${err}`,
-                } satisfies Partial<TodoState>)
+                  ...setError('search', `${err}`),
+                } satisfies Partial<State>)
               )
             )
           ),
@@ -87,17 +93,18 @@ export const TodoStore = signalStore(
           switchMap((request) =>
             todoService.add(request).pipe(
               map(
-                (addResponse): Partial<TodoState> => ({
-                  searchRequest: { ...store.searchRequest() },
-                  addResponse,
-                  addError: null,
-                })
+                (addResponse) =>
+                  ({
+                    searchRequest: { ...store.searchRequest() },
+                    addResponse,
+                    ...clearError('add'),
+                  } satisfies Partial<State>)
               ),
               catchError((err) =>
                 of({
                   addResponse: null,
-                  addError: `${err}`,
-                } satisfies Partial<TodoState>)
+                  ...setError('add', `${err}`),
+                } satisfies Partial<State>)
               )
             )
           ),
