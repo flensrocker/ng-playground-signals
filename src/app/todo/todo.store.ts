@@ -1,7 +1,6 @@
-import { Signal, computed, inject } from '@angular/core';
+import { computed, inject } from '@angular/core';
 
 import {
-  StateSignal,
   patchState,
   signalStore,
   withComputed,
@@ -19,15 +18,14 @@ import {
   SearchTodoResponse,
   TodoService,
 } from './todo.types';
+import { setBusy, withBusy } from './with-busy';
 
 export type TodoState = {
   readonly searchRequest: SearchTodoRequest;
   readonly searchResponse: SearchTodoResponse | null;
-  readonly searchBusy: boolean;
   readonly searchError: string | null;
   readonly addRequest: AddTodoRequest | null;
   readonly addResponse: AddTodoResponse | null;
-  readonly addBusy: boolean;
   readonly addError: string | null;
 };
 
@@ -41,78 +39,16 @@ const initialSearchTodoRequest: SearchTodoRequest = {
 const initialState: TodoState = {
   searchRequest: initialSearchTodoRequest,
   searchResponse: null,
-  searchBusy: false,
   searchError: null,
   addRequest: null,
   addResponse: null,
-  addBusy: false,
   addError: null,
 };
 
-const searchTodos = (
-  store: StateSignal<TodoState>,
-  todoService: TodoService
-) => {
-  return rxMethod<SearchTodoRequest>(
-    pipe(
-      tap(() => patchState(store, { searchBusy: true })),
-      switchMap((request) =>
-        todoService.search(request).pipe(
-          map(
-            (searchResponse): Partial<TodoState> => ({
-              searchResponse,
-              searchError: null,
-            })
-          ),
-          catchError((err) =>
-            of({
-              searchResponse: null,
-              searchError: `${err}`,
-            } satisfies Partial<TodoState>)
-          )
-        )
-      ),
-      tap((state) => {
-        patchState(store, { ...state, searchBusy: false });
-      })
-    )
-  );
-};
-
-const connectAddTodo = (
-  store: StateSignal<TodoState>,
-  searchRequest: Signal<SearchTodoRequest>,
-  todoService: TodoService
-) => {
-  return rxMethod<AddTodoRequest>(
-    pipe(
-      tap(() => patchState(store, { addBusy: true })),
-      switchMap((request) =>
-        todoService.add(request).pipe(
-          map(
-            (addResponse): Partial<TodoState> => ({
-              searchRequest: { ...searchRequest() },
-              addResponse,
-              addError: null,
-            })
-          ),
-          catchError((err) =>
-            of({
-              addResponse: null,
-              addError: `${err}`,
-            } satisfies Partial<TodoState>)
-          )
-        )
-      ),
-      tap((state) => {
-        patchState(store, { ...state, addBusy: false });
-      })
-    )
-  );
-};
-
 export const TodoStore = signalStore(
-  withState<TodoState>(initialState),
+  withState(initialState),
+  withBusy({ prop: 'search' }),
+  withBusy({ prop: 'add' }),
   withComputed((store) => ({
     todos: computed(() => store.searchResponse()?.todos ?? []),
     busy: computed(() => store.searchBusy() || store.addBusy()),
@@ -121,8 +57,55 @@ export const TodoStore = signalStore(
     const todoService = inject(TodoService);
 
     return {
-      searchTodos: searchTodos(store, todoService),
-      connectAddTodo: connectAddTodo(store, store.searchRequest, todoService),
+      searchTodos: rxMethod<SearchTodoRequest>(
+        pipe(
+          tap(() => patchState(store, setBusy(true, 'search'))),
+          switchMap((request) =>
+            todoService.search(request).pipe(
+              map(
+                (searchResponse): Partial<TodoState> => ({
+                  searchResponse,
+                  searchError: null,
+                })
+              ),
+              catchError((err) =>
+                of({
+                  searchResponse: null,
+                  searchError: `${err}`,
+                } satisfies Partial<TodoState>)
+              )
+            )
+          ),
+          tap(() => {
+            patchState(store, setBusy(false, 'search'));
+          })
+        )
+      ),
+      connectAddTodo: rxMethod<AddTodoRequest>(
+        pipe(
+          tap(() => patchState(store, setBusy(true, 'add'))),
+          switchMap((request) =>
+            todoService.add(request).pipe(
+              map(
+                (addResponse): Partial<TodoState> => ({
+                  searchRequest: { ...store.searchRequest() },
+                  addResponse,
+                  addError: null,
+                })
+              ),
+              catchError((err) =>
+                of({
+                  addResponse: null,
+                  addError: `${err}`,
+                } satisfies Partial<TodoState>)
+              )
+            )
+          ),
+          tap(() => {
+            patchState(store, setBusy(false, 'add'));
+          })
+        )
+      ),
     };
   }),
   withHooks({
