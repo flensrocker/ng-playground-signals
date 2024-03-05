@@ -18,7 +18,7 @@ import {
   SearchTodoResponse,
   TodoService,
 } from './todo.types';
-import { NamedBusyState, setBusy, withBusy } from './with-busy';
+import { NamedBusyState, clearBusy, setBusy, withBusy } from './with-busy';
 import { NamedErrorState, clearError, setError, withError } from './with-error';
 
 export type TodoState = {
@@ -64,7 +64,7 @@ export const TodoStore = signalStore(
     return {
       searchTodos: rxMethod<SearchTodoRequest>(
         pipe(
-          tap(() => patchState(store, setBusy('search', true))),
+          tap(() => patchState(store, setBusy('search'))),
           switchMap((request) =>
             todoService.search(request).pipe(
               map(
@@ -83,13 +83,13 @@ export const TodoStore = signalStore(
             )
           ),
           tap((state) => {
-            patchState(store, state, setBusy('search', false));
+            patchState(store, state, clearBusy('search'));
           })
         )
       ),
       connectAddTodo: rxMethod<AddTodoRequest>(
         pipe(
-          tap(() => patchState(store, setBusy('add', true))),
+          tap(() => patchState(store, setBusy('add'))),
           switchMap((request) =>
             todoService.add(request).pipe(
               map(
@@ -109,7 +109,7 @@ export const TodoStore = signalStore(
             )
           ),
           tap((state) => {
-            patchState(store, state, setBusy('add', false));
+            patchState(store, state, clearBusy('add'));
           })
         )
       ),
