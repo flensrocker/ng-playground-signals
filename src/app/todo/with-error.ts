@@ -24,10 +24,11 @@ const getErrorStateKeys = (collection?: string) => {
 
 type ErrorSignals = {
   readonly hasError: Signal<boolean>;
+  readonly hasBusy: Signal<string>;
 };
 
 type NamedErrorSignals<Collection extends string> = {
-  [K in Collection as `${K}HasError`]: ErrorSignals['hasError'];
+  [K in keyof ErrorSignals as `${Collection}${Capitalize<K>}`]: ErrorSignals[K];
 };
 
 const getErrorSignalKeys = (collection?: string) => {
