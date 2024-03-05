@@ -1,5 +1,4 @@
 import {
-  PartialStateUpdater,
   SignalStoreFeature,
   signalStoreFeature,
   withState,
@@ -59,50 +58,42 @@ export function withBusy<Collection extends string>(
   );
 }
 
-export function setBusy(): PartialStateUpdater<BusyState>;
-export function setBusy(busy: boolean): PartialStateUpdater<BusyState>;
+export function setBusy(): BusyState;
+export function setBusy(busy: boolean): BusyState;
 export function setBusy<Collection extends string>(
   collection: Collection
-): PartialStateUpdater<NamedBusyState<Collection>>;
+): NamedBusyState<Collection>;
 export function setBusy<Collection extends string>(
   collection: Collection,
   busy: boolean
-): PartialStateUpdater<NamedBusyState<Collection>>;
+): NamedBusyState<Collection>;
 export function setBusy<Collection extends string>(
   collectionOrBusy?: Collection | boolean,
   maybeBusy?: boolean
-):
-  | PartialStateUpdater<NamedBusyState<Collection>>
-  | PartialStateUpdater<BusyState> {
+): NamedBusyState<Collection> | BusyState {
   if (typeof collectionOrBusy === 'string') {
     const { busyStateKey } = getBusyStateKeys(collectionOrBusy);
     const busy = typeof maybeBusy === 'boolean' ? maybeBusy : true;
 
-    return () => {
-      return {
-        [busyStateKey]: busy,
-      } as NamedBusyState<Collection>;
-    };
+    return {
+      [busyStateKey]: busy,
+    } as NamedBusyState<Collection>;
   }
 
   const { busyStateKey } = getBusyStateKeys();
   const busy = typeof collectionOrBusy === 'boolean' ? collectionOrBusy : true;
-  return () => {
-    return {
-      [busyStateKey]: busy,
-    } as BusyState;
-  };
+  return {
+    [busyStateKey]: busy,
+  } as BusyState;
 }
 
-export function clearBusy(): PartialStateUpdater<BusyState>;
+export function clearBusy(): BusyState;
 export function clearBusy<Collection extends string>(
   collection: Collection
-): PartialStateUpdater<NamedBusyState<Collection>>;
+): NamedBusyState<Collection>;
 export function clearBusy<Collection extends string>(
   collection?: Collection
-):
-  | PartialStateUpdater<NamedBusyState<Collection>>
-  | PartialStateUpdater<BusyState> {
+): NamedBusyState<Collection> | BusyState {
   if (typeof collection === 'string') {
     return setBusy(collection, false);
   }
