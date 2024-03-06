@@ -4,6 +4,7 @@ import {
   withState,
 } from '@ngrx/signals';
 import {
+  NamedObject,
   ObjectKeys,
   ObjectKeysCapitalized,
   getObjectKeys,
@@ -13,9 +14,7 @@ export type BusyState = {
   readonly busy: boolean;
 };
 
-export type NamedBusyState<Collection extends string> = {
-  [K in Collection as `${K}Busy`]: BusyState['busy'];
-};
+export type NamedBusyState<Collection extends string> = NamedObject<Collection, BusyState>;
 
 type BusyStateKeys = ObjectKeys<BusyState>;
 type BusyStateKeysCapitalized = ObjectKeysCapitalized<BusyState>;

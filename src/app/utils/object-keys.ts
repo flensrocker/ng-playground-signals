@@ -1,3 +1,7 @@
+export type NamedObject<Name extends string, T> = {
+  [K in keyof T as `${Name}${K extends string ? Capitalize<K> : never}`]: T[K];
+};
+
 export type ObjectKeys<T> = {
   readonly [K in keyof T as `${K extends string ? K : never}Key`]: K;
 };

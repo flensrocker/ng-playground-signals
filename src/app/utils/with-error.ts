@@ -6,6 +6,7 @@ import {
   withState,
 } from '@ngrx/signals';
 import {
+  NamedObject,
   ObjectKeys,
   ObjectKeysCapitalized,
   getObjectKeys,
@@ -15,9 +16,7 @@ export type ErrorState = {
   readonly error: string | null;
 };
 
-export type NamedErrorState<Collection extends string> = {
-  [K in keyof ErrorState as `${Collection}${Capitalize<K>}`]: ErrorState[K];
-};
+export type NamedErrorState<Collection extends string> = NamedObject<Collection, ErrorState>;
 
 type ErrorStateKeys = ObjectKeys<ErrorState>;
 type ErrorStateKeysCapitalized = ObjectKeysCapitalized<ErrorState>;
