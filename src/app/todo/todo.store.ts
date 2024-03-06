@@ -18,8 +18,16 @@ import {
   SearchTodoResponse,
   TodoService,
 } from './todo.types';
-import { NamedBusyState, clearBusy, setBusy, withBusy } from './with-busy';
-import { NamedErrorState, clearError, setError, withError } from './with-error';
+import {
+  NamedBusyState,
+  clearBusy,
+  setBusy,
+  withBusy,
+  NamedErrorState,
+  clearError,
+  setError,
+  withError,
+} from '../signals';
 
 export type TodoState = {
   readonly searchRequest: SearchTodoRequest;

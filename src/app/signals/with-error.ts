@@ -5,39 +5,45 @@ import {
   withComputed,
   withState,
 } from '@ngrx/signals';
+import { ObjectKeys, ObjectKeysCapitalized, getObjectKeys } from './utils';
 
 export type ErrorState = {
   readonly error: string | null;
 };
 
 export type NamedErrorState<Collection extends string> = {
-  [K in Collection as `${K}Error`]: ErrorState['error'];
+  [K in keyof ErrorState as `${Collection}${Capitalize<K>}`]: ErrorState[K];
 };
 
-const getErrorStateKeys = (collection?: string) => {
-  const errorStateKey = collection == null ? 'error' : `${collection}Error`;
+type ErrorStateKeys = ObjectKeys<ErrorState>;
+type ErrorStateKeysCapitalized = ObjectKeysCapitalized<ErrorState>;
 
-  return {
-    errorStateKey,
-  };
+const errorStateKeys: ErrorStateKeys = {
+  errorKey: 'error',
+};
+
+const errorStateKeysCapitalized: ErrorStateKeysCapitalized = {
+  errorKey: 'Error',
 };
 
 type ErrorSignals = {
   readonly hasError: Signal<boolean>;
-  readonly hasBusy: Signal<string>;
 };
 
 type NamedErrorSignals<Collection extends string> = {
   [K in keyof ErrorSignals as `${Collection}${Capitalize<K>}`]: ErrorSignals[K];
 };
 
-const getErrorSignalKeys = (collection?: string) => {
-  const hasErrorSignalKey =
-    collection == null ? 'hasError' : `${collection}HasError`;
+type ErrorSignalsKeys = ObjectKeys<ErrorSignals>;
 
-  return {
-    hasErrorSignalKey,
-  };
+type ErrorSignalsKeysCapitalized = ObjectKeysCapitalized<ErrorSignals>;
+
+const errorSignalsKeys: ErrorSignalsKeys = {
+  hasErrorKey: 'hasError',
+};
+
+const errorSignalsKeysCapitalized: ErrorSignalsKeysCapitalized = {
+  hasErrorKey: 'HasError',
 };
 
 export function withError(): SignalStoreFeature<
@@ -69,18 +75,26 @@ export function withError<Collection extends string>(
 export function withError<Collection extends string>(
   collection?: Collection
 ): SignalStoreFeature {
-  const { errorStateKey } = getErrorStateKeys(collection);
-  const { hasErrorSignalKey } = getErrorSignalKeys(collection);
+  const { errorKey } = getObjectKeys(
+    collection,
+    errorStateKeys,
+    errorStateKeysCapitalized
+  );
+  const { hasErrorKey } = getObjectKeys(
+    collection,
+    errorSignalsKeys,
+    errorSignalsKeysCapitalized
+  );
 
   return signalStoreFeature(
     withState({
-      [errorStateKey]: null,
+      [errorKey]: null,
     }),
     withComputed((store: Record<string, Signal<unknown>>) => {
-      const error = store[errorStateKey] as Signal<string | null>;
+      const error = store[errorKey] as Signal<ErrorState['error']>;
 
       return {
-        [hasErrorSignalKey]: computed(() => error() != null),
+        [hasErrorKey]: computed(() => error() != null),
       };
     })
   );
@@ -92,20 +106,26 @@ export function setError<Collection extends string>(
   error: string
 ): NamedErrorState<Collection>;
 export function setError<Collection extends string>(
-  collection: Collection | string,
+  collectionOrError: Collection | string,
   error?: string
 ): NamedErrorState<Collection> | ErrorState {
-  if (typeof error === 'string') {
-    const { errorStateKey } = getErrorStateKeys(collection);
-    return {
-      [errorStateKey]: error.length === 0 ? null : error,
-    } as NamedErrorState<Collection>;
-  }
+  const { errorKey } = getObjectKeys(
+    collectionOrError,
+    errorStateKeys,
+    errorStateKeysCapitalized
+  );
+  const realError =
+    typeof error === 'string'
+      ? error.length === 0
+        ? null
+        : error
+      : collectionOrError.length === 0
+      ? null
+      : collectionOrError;
 
-  const { errorStateKey } = getErrorStateKeys();
   return {
-    [errorStateKey]: collection.length === 0 ? null : collection,
-  } as ErrorState;
+    [errorKey]: realError,
+  } as ErrorState | NamedErrorState<Collection>;
 }
 
 export function clearError(): ErrorState;
@@ -115,15 +135,13 @@ export function clearError<Collection extends string>(
 export function clearError<Collection extends string>(
   collection?: Collection
 ): NamedErrorState<Collection> | ErrorState {
-  if (typeof collection === 'string') {
-    const { errorStateKey } = getErrorStateKeys(collection);
-    return {
-      [errorStateKey]: null,
-    } as NamedErrorState<Collection>;
-  }
+  const { errorKey } = getObjectKeys(
+    collection,
+    errorStateKeys,
+    errorStateKeysCapitalized
+  );
 
-  const { errorStateKey } = getErrorStateKeys();
   return {
-    [errorStateKey]: null,
-  } as ErrorState;
+    [errorKey]: null,
+  } as NamedErrorState<Collection> | ErrorState;
 }
