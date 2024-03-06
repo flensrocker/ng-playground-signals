@@ -14,7 +14,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoStore } from './todo.store';
-import { toFormSubmit } from '../signals';
+import { toFormSubmit } from '../utils';
 
 @Component({
   standalone: true,

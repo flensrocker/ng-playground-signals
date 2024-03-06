@@ -27,7 +27,7 @@ import {
   clearError,
   setError,
   withError,
-} from '../signals';
+} from '../utils';
 
 export type TodoState = {
   readonly searchRequest: SearchTodoRequest;

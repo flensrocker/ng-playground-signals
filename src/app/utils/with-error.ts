@@ -5,7 +5,11 @@ import {
   withComputed,
   withState,
 } from '@ngrx/signals';
-import { ObjectKeys, ObjectKeysCapitalized, getObjectKeys } from './utils';
+import {
+  ObjectKeys,
+  ObjectKeysCapitalized,
+  getObjectKeys,
+} from './object-keys';
 
 export type ErrorState = {
   readonly error: string | null;
