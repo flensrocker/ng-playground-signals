@@ -1,17 +1,24 @@
-import { Signal } from '@angular/core';
+import { ElementRef, Signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { FormGroupDirective, NgForm } from '@angular/forms';
-import { filter, map, switchMap } from 'rxjs';
+import { EMPTY, fromEvent, map, switchMap } from 'rxjs';
 
-export const isNotNull = <T>(obj: T | null | undefined): obj is T =>
-  obj != null;
-
-export const toFormSubmit = <T>(
+export const formSubmit = <T>(
   ngForm$: Signal<NgForm | FormGroupDirective | undefined>
 ) =>
   toObservable(ngForm$).pipe(
-    filter(isNotNull),
     switchMap((ngForm) =>
-      ngForm.ngSubmit.pipe(map((): T => ngForm.form.getRawValue()))
+      ngForm == null
+        ? EMPTY
+        : ngForm.ngSubmit.pipe(map((): T => ngForm.form.getRawValue()))
+    )
+  );
+
+export const buttonClick = (
+  button$: Signal<ElementRef<HTMLButtonElement> | undefined>
+) =>
+  toObservable(button$).pipe(
+    switchMap((button) =>
+      button == null ? EMPTY : fromEvent(button.nativeElement, 'click')
     )
   );
