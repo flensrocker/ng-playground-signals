@@ -5,6 +5,7 @@ import {
   withComputed,
   withState,
 } from '@ngrx/signals';
+
 import {
   NamedObject,
   ObjectKeys,
@@ -12,14 +13,41 @@ import {
   getObjectKeys,
 } from './object-keys';
 
+// An example extension to @ngrx/signalStore which adds an "error" field and "hasError" signal to the store.
+//
+// const ExampleStore = signalStore(
+//   withState(...),
+//   withError(), // adds "error" and "hasError"
+//   ...
+// );
+//
+// const NamedExampleStore = signalStore(
+//   withState(...),
+//   withError("foo"), // adds "fooError" and "fooHasError"
+//   withError("bar"), // adds "barError" and "barHasError"
+//   ...
+// );
+
 export type ErrorState = {
   readonly error: string | null;
 };
+export type ErrorSignals = {
+  readonly hasError: Signal<boolean>;
+};
 
-export type NamedErrorState<Collection extends string> = NamedObject<Collection, ErrorState>;
+export type NamedErrorState<Collection extends string> = NamedObject<
+  Collection,
+  ErrorState
+>;
+export type NamedErrorSignals<Collection extends string> = NamedObject<
+  Collection,
+  ErrorSignals
+>;
 
 type ErrorStateKeys = ObjectKeys<ErrorState>;
 type ErrorStateKeysCapitalized = ObjectKeysCapitalized<ErrorState>;
+type ErrorSignalsKeys = ObjectKeys<ErrorSignals>;
+type ErrorSignalsKeysCapitalized = ObjectKeysCapitalized<ErrorSignals>;
 
 const errorStateKeys: ErrorStateKeys = {
   errorKey: 'error',
@@ -28,18 +56,6 @@ const errorStateKeys: ErrorStateKeys = {
 const errorStateKeysCapitalized: ErrorStateKeysCapitalized = {
   errorKey: 'Error',
 };
-
-type ErrorSignals = {
-  readonly hasError: Signal<boolean>;
-};
-
-type NamedErrorSignals<Collection extends string> = {
-  [K in keyof ErrorSignals as `${Collection}${Capitalize<K>}`]: ErrorSignals[K];
-};
-
-type ErrorSignalsKeys = ObjectKeys<ErrorSignals>;
-
-type ErrorSignalsKeysCapitalized = ObjectKeysCapitalized<ErrorSignals>;
 
 const errorSignalsKeys: ErrorSignalsKeys = {
   hasErrorKey: 'hasError',
@@ -103,15 +119,15 @@ export function withError<Collection extends string>(
   );
 }
 
-export function setError(error: string): ErrorState;
+export function setError(error: string): Partial<ErrorState>;
 export function setError<Collection extends string>(
   collection: Collection,
   error: string
-): NamedErrorState<Collection>;
+): Partial<NamedErrorState<Collection>>;
 export function setError<Collection extends string>(
   collectionOrError: Collection | string,
   error?: string
-): NamedErrorState<Collection> | ErrorState {
+): Partial<NamedErrorState<Collection> | ErrorState> {
   const { errorKey } = getObjectKeys(
     collectionOrError,
     errorStateKeys,
@@ -128,16 +144,16 @@ export function setError<Collection extends string>(
 
   return {
     [errorKey]: realError,
-  } as ErrorState | NamedErrorState<Collection>;
+  };
 }
 
-export function clearError(): ErrorState;
+export function clearError(): Partial<ErrorState>;
 export function clearError<Collection extends string>(
   collection: Collection
-): NamedErrorState<Collection>;
+): Partial<NamedErrorState<Collection>>;
 export function clearError<Collection extends string>(
   collection?: Collection
-): NamedErrorState<Collection> | ErrorState {
+): Partial<NamedErrorState<Collection> | ErrorState> {
   const { errorKey } = getObjectKeys(
     collection,
     errorStateKeys,
@@ -146,5 +162,5 @@ export function clearError<Collection extends string>(
 
   return {
     [errorKey]: null,
-  } as NamedErrorState<Collection> | ErrorState;
+  };
 }
