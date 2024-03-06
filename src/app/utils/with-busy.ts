@@ -3,6 +3,11 @@ import {
   signalStoreFeature,
   withState,
 } from '@ngrx/signals';
+import {
+  ObjectKeys,
+  ObjectKeysCapitalized,
+  getObjectKeys,
+} from './object-keys';
 
 export type BusyState = {
   readonly busy: boolean;
@@ -12,12 +17,15 @@ export type NamedBusyState<Collection extends string> = {
   [K in Collection as `${K}Busy`]: BusyState['busy'];
 };
 
-const getBusyStateKeys = (collection?: string) => {
-  const busyStateKey = collection == null ? 'busy' : `${collection}Busy`;
+type BusyStateKeys = ObjectKeys<BusyState>;
+type BusyStateKeysCapitalized = ObjectKeysCapitalized<BusyState>;
 
-  return {
-    busyStateKey,
-  };
+const busyStateKeys: BusyStateKeys = {
+  busyKey: 'busy',
+};
+
+const busyStateKeysCapitalized: BusyStateKeysCapitalized = {
+  busyKey: 'Busy',
 };
 
 export function withBusy(): SignalStoreFeature<
@@ -49,11 +57,15 @@ export function withBusy<Collection extends string>(
 export function withBusy<Collection extends string>(
   collection?: Collection
 ): SignalStoreFeature {
-  const { busyStateKey } = getBusyStateKeys(collection);
+  const { busyKey } = getObjectKeys(
+    collection,
+    busyStateKeys,
+    busyStateKeysCapitalized
+  );
 
   return signalStoreFeature(
     withState({
-      [busyStateKey]: false,
+      [busyKey]: false,
     })
   );
 }
@@ -72,18 +84,21 @@ export function setBusy<Collection extends string>(
   maybeBusy?: boolean
 ): NamedBusyState<Collection> | BusyState {
   if (typeof collectionOrBusy === 'string') {
-    const { busyStateKey } = getBusyStateKeys(collectionOrBusy);
+    const { busyKey } = getObjectKeys(
+      collectionOrBusy,
+      busyStateKeys,
+      busyStateKeysCapitalized
+    );
     const busy = typeof maybeBusy === 'boolean' ? maybeBusy : true;
 
     return {
-      [busyStateKey]: busy,
+      [busyKey]: busy,
     } as NamedBusyState<Collection>;
   }
 
-  const { busyStateKey } = getBusyStateKeys();
   const busy = typeof collectionOrBusy === 'boolean' ? collectionOrBusy : true;
   return {
-    [busyStateKey]: busy,
+    [busyStateKeys.busyKey]: busy,
   } as BusyState;
 }
 
