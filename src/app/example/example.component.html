@@ -3,7 +3,7 @@
     >Title
     <input type="text" formControlName="title" />
   </label>
-  <button type="submit" [disabled]="!form.valid || busy()">submit</button>
+  <button type="submit" [disabled]="submitDisabled()">submit</button>
   @if (busy()) {
   <div>submitting...</div>
   } @if (error()) {

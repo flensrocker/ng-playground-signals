@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   viewChild,
 } from '@angular/core';
@@ -60,6 +61,9 @@ export class ExampleComponent {
     }),
   });
 
+  readonly formStatus = toSignal(this.form.statusChanges, {
+    initialValue: this.form.status,
+  });
   readonly NgForm = viewChild<FormGroupDirective>('ngForm');
   readonly submit$ = formSubmit<ExampleFormValue>(this.NgForm);
 
@@ -87,6 +91,10 @@ export class ExampleComponent {
   );
   readonly error = toSignal(
     this.formEvent$.pipe(map((e) => (isFormError(e) ? e.error : undefined)))
+  );
+
+  readonly submitDisabled = computed(
+    () => this.busy() || this.formStatus() !== 'VALID'
   );
 
   readonly #initialValues: readonly ExampleValue[] = [];
