@@ -14,7 +14,6 @@ import {
   Validators,
 } from '@angular/forms';
 import {
-  Observable,
   catchError,
   filter,
   map,
@@ -33,14 +32,14 @@ import {
   ExampleValue,
 } from './example.service';
 import {
+  formErrorEvent,
   formSubmit,
-  FormEvent,
-  FormSuccessEvent,
-  FormErrorEvent,
-  submittingEvent,
-  isFormSubmitting,
-  isFormError,
-  isFormSuccess,
+  formSubmittingEvent,
+  formSuccessEvent,
+  isFormSubmittingEvent,
+  isFormErrorEvent,
+  isFormSuccessEvent,
+  formStatus,
 } from './forms-utils';
 
 @Component({
@@ -61,47 +60,42 @@ export class ExampleComponent {
     }),
   });
 
-  readonly formStatus = toSignal(this.form.statusChanges, {
-    initialValue: this.form.status,
-  });
   readonly NgForm = viewChild<FormGroupDirective>('ngForm');
-  readonly submit$ = formSubmit<ExampleFormValue>(this.NgForm);
 
-  readonly formEvent$: Observable<FormEvent<ExampleValue>> = this.submit$.pipe(
-    switchMap((v) =>
-      this.#service.submit(v).pipe(
-        map(
-          (response): FormSuccessEvent<ExampleValue> => ({
-            type: 'SUCCESS',
-            value: response,
-          })
-        ),
-        catchError(
-          (err): Observable<FormErrorEvent> =>
-            of({ type: 'ERROR', error: `${err}` })
-        ),
-        startWith(submittingEvent)
+  readonly #submit$ = formSubmit<ExampleFormValue>(this.NgForm);
+  readonly #formStatus = formStatus(this.form);
+
+  readonly #formEvent$ = this.#submit$.pipe(
+    switchMap((request) =>
+      this.#service.submit(request).pipe(
+        map((response) => formSuccessEvent(response)),
+        catchError((err) => of(formErrorEvent(err))),
+        startWith(formSubmittingEvent)
       )
     ),
     share()
   );
 
   readonly busy = toSignal(
-    this.formEvent$.pipe(map((e) => isFormSubmitting(e)))
+    this.#formEvent$.pipe(map((e) => isFormSubmittingEvent(e))),
+    { initialValue: false }
   );
   readonly error = toSignal(
-    this.formEvent$.pipe(map((e) => (isFormError(e) ? e.error : undefined)))
+    this.#formEvent$.pipe(
+      map((e) => (isFormErrorEvent(e) ? e.error : undefined))
+    ),
+    { initialValue: undefined }
   );
 
   readonly submitDisabled = computed(
-    () => this.busy() || this.formStatus() !== 'VALID'
+    () => this.busy() || this.#formStatus() !== 'VALID'
   );
 
   readonly #initialValues: readonly ExampleValue[] = [];
 
   readonly values = toSignal(
-    this.formEvent$.pipe(
-      filter(isFormSuccess),
+    this.#formEvent$.pipe(
+      filter(isFormSuccessEvent),
       tap(() => this.form.reset()),
       scan((values, value) => [...values, value.value], this.#initialValues)
     ),
