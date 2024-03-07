@@ -13,21 +13,21 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { filter, scan, tap } from 'rxjs';
+import { scan, tap } from 'rxjs';
 
 import {
-  ExampleService,
   ExampleFormGroup,
   ExampleFormValue,
+  ExampleService,
   ExampleValue,
 } from './example.service';
 import {
-  formSubmit,
-  isFormSuccessEvent,
-  formStatus,
+  formError,
   formEvent,
   formIsBusy,
-  formError,
+  formStatus,
+  formSubmit,
+  formSuccess,
 } from './forms-utils';
 
 @Component({
@@ -65,12 +65,12 @@ export class ExampleComponent {
   );
 
   readonly #initialValues: readonly ExampleValue[] = [];
+  readonly #formValue = formSuccess(this.#formEvent$);
 
   readonly values = toSignal(
-    this.#formEvent$.pipe(
-      filter(isFormSuccessEvent),
+    this.#formValue.pipe(
       tap(() => this.form.reset()),
-      scan((values, value) => [...values, value.value], this.#initialValues)
+      scan((values, value) => [...values, value], this.#initialValues)
     ),
     { initialValue: this.#initialValues }
   );

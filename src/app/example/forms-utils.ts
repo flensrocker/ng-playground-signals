@@ -10,6 +10,7 @@ import {
   EMPTY,
   Observable,
   catchError,
+  filter,
   map,
   of,
   share,
@@ -58,6 +59,23 @@ export const formSubmit = <TFormValue>(
 export const formStatus = (form: AbstractControl): Signal<FormControlStatus> =>
   toSignal(form.statusChanges, { initialValue: form.status });
 
+export const formValue = <TFormValue>(
+  form: AbstractControl<TFormValue>
+): Signal<TFormValue> =>
+  toSignal(form.valueChanges, {
+    initialValue: form.value,
+  });
+
+export const formRawValue = <
+  TFormValue,
+  TFormRawValue extends TFormValue = TFormValue
+>(
+  form: AbstractControl<TFormValue, TFormRawValue>
+): Signal<TFormRawValue> =>
+  toSignal(form.valueChanges.pipe(map(() => form.getRawValue())), {
+    initialValue: form.getRawValue(),
+  });
+
 export const formEvent = <TFormValue, TResponse>(
   formSubmit$: Observable<TFormValue>,
   serviceCall: (request: TFormValue) => Observable<TResponse>
@@ -86,4 +104,12 @@ export const formError = <TFormValue>(
   toSignal(
     formEvent$.pipe(map((ev) => (isFormErrorEvent(ev) ? ev.error : undefined))),
     { initialValue: undefined }
+  );
+
+export const formSuccess = <TFormValue>(
+  formEvent$: Observable<FormEvent<TFormValue>>
+) =>
+  formEvent$.pipe(
+    filter(isFormSuccessEvent),
+    map((ev) => ev.value)
   );
