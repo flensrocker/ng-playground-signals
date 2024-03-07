@@ -6,7 +6,16 @@ import {
   FormGroupDirective,
   NgForm,
 } from '@angular/forms';
-import { EMPTY, Observable, map, switchMap } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  catchError,
+  map,
+  of,
+  share,
+  startWith,
+  switchMap,
+} from 'rxjs';
 
 export type FormSubmittingEvent = { readonly type: 'SUBMITTING' };
 export type FormSuccessEvent<T> = { readonly type: 'SUCCESS'; value: T };
@@ -35,9 +44,9 @@ export const isFormSubmittingEvent = <T>(
 export const isFormErrorEvent = <T>(obj: FormEvent<T>): obj is FormErrorEvent =>
   obj.type === 'ERROR';
 
-export const formSubmit = <T>(
+export const formSubmit = <TFormValue>(
   ngForm$: Signal<NgForm | FormGroupDirective | undefined>
-): Observable<T> =>
+): Observable<TFormValue> =>
   toObservable(ngForm$).pipe(
     switchMap((ngForm) =>
       ngForm == null
@@ -48,3 +57,33 @@ export const formSubmit = <T>(
 
 export const formStatus = (form: AbstractControl): Signal<FormControlStatus> =>
   toSignal(form.statusChanges, { initialValue: form.status });
+
+export const formEvent = <TFormValue, TResponse>(
+  formSubmit$: Observable<TFormValue>,
+  serviceCall: (request: TFormValue) => Observable<TResponse>
+): Observable<FormEvent<TResponse>> =>
+  formSubmit$.pipe(
+    switchMap((request) =>
+      serviceCall(request).pipe(
+        map((response) => formSuccessEvent(response)),
+        catchError((err) => of(formErrorEvent(err))),
+        startWith(formSubmittingEvent)
+      )
+    ),
+    share()
+  );
+
+export const formIsBusy = <TFormValue>(
+  formEvent$: Observable<FormEvent<TFormValue>>
+): Signal<boolean> =>
+  toSignal(formEvent$.pipe(map((ev) => isFormSubmittingEvent(ev))), {
+    initialValue: false,
+  });
+
+export const formError = <TFormValue>(
+  formEvent$: Observable<FormEvent<TFormValue>>
+): Signal<string | undefined> =>
+  toSignal(
+    formEvent$.pipe(map((ev) => (isFormErrorEvent(ev) ? ev.error : undefined))),
+    { initialValue: undefined }
+  );

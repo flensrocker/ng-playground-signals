@@ -13,17 +13,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  catchError,
-  filter,
-  map,
-  of,
-  scan,
-  share,
-  startWith,
-  switchMap,
-  tap,
-} from 'rxjs';
+import { filter, scan, tap } from 'rxjs';
 
 import {
   ExampleService,
@@ -32,14 +22,12 @@ import {
   ExampleValue,
 } from './example.service';
 import {
-  formErrorEvent,
   formSubmit,
-  formSubmittingEvent,
-  formSuccessEvent,
-  isFormSubmittingEvent,
-  isFormErrorEvent,
   isFormSuccessEvent,
   formStatus,
+  formEvent,
+  formIsBusy,
+  formError,
 } from './forms-utils';
 
 @Component({
@@ -62,30 +50,15 @@ export class ExampleComponent {
 
   readonly NgForm = viewChild<FormGroupDirective>('ngForm');
 
-  readonly #submit$ = formSubmit<ExampleFormValue>(this.NgForm);
+  readonly #formSubmit$ = formSubmit<ExampleFormValue>(this.NgForm);
   readonly #formStatus = formStatus(this.form);
 
-  readonly #formEvent$ = this.#submit$.pipe(
-    switchMap((request) =>
-      this.#service.submit(request).pipe(
-        map((response) => formSuccessEvent(response)),
-        catchError((err) => of(formErrorEvent(err))),
-        startWith(formSubmittingEvent)
-      )
-    ),
-    share()
+  readonly #formEvent$ = formEvent(this.#formSubmit$, (request) =>
+    this.#service.submit(request)
   );
 
-  readonly busy = toSignal(
-    this.#formEvent$.pipe(map((e) => isFormSubmittingEvent(e))),
-    { initialValue: false }
-  );
-  readonly error = toSignal(
-    this.#formEvent$.pipe(
-      map((e) => (isFormErrorEvent(e) ? e.error : undefined))
-    ),
-    { initialValue: undefined }
-  );
+  readonly busy = formIsBusy(this.#formEvent$);
+  readonly error = formError(this.#formEvent$);
 
   readonly submitDisabled = computed(
     () => this.busy() || this.#formStatus() !== 'VALID'
