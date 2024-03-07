@@ -6,6 +6,10 @@ export const routes: Routes = [
     loadChildren: () => import('./todo').then((m) => m.TODO_ROUTES),
   },
   {
+    path: 'example',
+    loadChildren: () => import('./example').then((m) => m.EXAMPLE_ROUTES),
+  },
+  {
     path: '**',
     redirectTo: 'todo',
   },
