@@ -1,0 +1,20 @@
+<form #ngForm="ngForm" [formGroup]="form">
+  <label
+    >Title
+    <input type="text" formControlName="title" />
+  </label>
+  <button type="submit" [disabled]="!form.valid || busy()">submit</button>
+  @if (busy()) {
+  <div>submitting...</div>
+  } @if (error()) {
+  <div>{{ error() }}</div>
+  }
+  <ul>
+    @for (value of values(); track value.id) {
+    <li>
+      {{ value.id }}
+      {{ value.title }}
+    </li>
+    }
+  </ul>
+</form>

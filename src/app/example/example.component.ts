@@ -1,25 +1,20 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  Injectable,
-  Signal,
   inject,
   viewChild,
 } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormGroup,
   FormGroupDirective,
-  NgForm,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import {
-  EMPTY,
   Observable,
   catchError,
-  delay,
   filter,
   map,
   of,
@@ -30,58 +25,22 @@ import {
   tap,
 } from 'rxjs';
 
-type FormSubmittingEvent = { readonly type: 'SUBMITTING' };
-type FormSuccessEvent<T> = { readonly type: 'SUCCESS'; value: T };
-type FormErrorEvent = { readonly type: 'ERROR'; error: string };
-type FormEvent<T> = FormSubmittingEvent | FormSuccessEvent<T> | FormErrorEvent;
-
-const submittingEvent: FormSubmittingEvent = { type: 'SUBMITTING' };
-
-const isFormSuccess = <T>(obj: FormEvent<T>): obj is FormSuccessEvent<T> =>
-  obj.type === 'SUCCESS';
-const isFormSubmitting = <T>(obj: FormEvent<T>): obj is FormSubmittingEvent =>
-  obj.type === 'SUBMITTING';
-const isFormError = <T>(obj: FormEvent<T>): obj is FormErrorEvent =>
-  obj.type === 'ERROR';
-
-const formSubmit = <T>(
-  ngForm$: Signal<NgForm | FormGroupDirective | undefined>
-): Observable<T> =>
-  toObservable(ngForm$).pipe(
-    switchMap((ngForm) =>
-      ngForm == null
-        ? EMPTY
-        : ngForm.ngSubmit.pipe(map(() => ngForm.form.getRawValue()))
-    )
-  );
-
-type ExampleValue = {
-  readonly id: string;
-  readonly title: string;
-};
-type ExampleFormValue = Omit<ExampleValue, 'id'>;
-type ExampleFormGroup = FormGroup<{
-  title: FormControl<string>;
-}>;
-
-@Injectable()
-export class ExampleService {
-  submit(value: ExampleFormValue): Observable<ExampleValue> {
-    return of(value).pipe(
-      delay(500),
-      map((v) => {
-        if (v.title.startsWith('err')) {
-          throw new Error(v.title.slice(3));
-        }
-
-        return {
-          ...v,
-          id: crypto.randomUUID(),
-        };
-      })
-    );
-  }
-}
+import {
+  ExampleService,
+  ExampleFormGroup,
+  ExampleFormValue,
+  ExampleValue,
+} from './example.service';
+import {
+  formSubmit,
+  FormEvent,
+  FormSuccessEvent,
+  FormErrorEvent,
+  submittingEvent,
+  isFormSubmitting,
+  isFormError,
+  isFormSuccess,
+} from './forms-utils';
 
 @Component({
   standalone: true,
@@ -89,26 +48,7 @@ export class ExampleService {
   selector: 'app-example',
   imports: [ReactiveFormsModule],
   providers: [ExampleService],
-  template: `<form #ngForm="ngForm" [formGroup]="form">
-    <label
-      >Title
-      <input type="text" formControlName="title" />
-    </label>
-    <button type="submit" [disabled]="!form.valid || busy()">submit</button>
-    @if (busy()) {
-    <div>submitting...</div>
-    } @if (error()) {
-    <div>{{ error() }}</div>
-    }
-    <ul>
-      @for (value of values(); track value.id) {
-      <li>
-        {{ value.id }}
-        {{ value.title }}
-      </li>
-      }
-    </ul>
-  </form>`,
+  templateUrl: './example.component.html',
 })
 export class ExampleComponent {
   readonly #service = inject(ExampleService);
