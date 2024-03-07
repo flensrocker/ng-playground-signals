@@ -50,28 +50,32 @@ export class ExampleComponent {
 
   readonly NgForm = viewChild<FormGroupDirective>('ngForm');
 
-  readonly #formSubmit$ = formSubmit<ExampleFormValue>(this.NgForm);
-  readonly #formStatus = formStatus(this.form);
+  readonly #submit$ = formSubmit<ExampleFormValue>(this.NgForm);
+  readonly #status = formStatus(this.form);
 
-  readonly #formEvent$ = formEvent(this.#formSubmit$, (request) =>
+  readonly #event$ = formEvent(this.#submit$, (request) =>
     this.#service.submit(request)
   );
 
-  readonly busy = formIsBusy(this.#formEvent$);
-  readonly error = formError(this.#formEvent$);
+  readonly isBusy = formIsBusy(this.#event$);
+  readonly error = formError(this.#event$);
+  readonly hasError = computed(() => this.error() != null);
 
   readonly submitDisabled = computed(
-    () => this.busy() || this.#formStatus() !== 'VALID'
+    () => this.isBusy() || this.#status() !== 'VALID'
   );
 
-  readonly #initialValues: readonly ExampleValue[] = [];
-  readonly #formValue = formSuccess(this.#formEvent$);
+  readonly #initialResponses: readonly ExampleValue[] = [];
+  readonly #response = formSuccess(this.#event$);
 
-  readonly values = toSignal(
-    this.#formValue.pipe(
+  readonly responses = toSignal(
+    this.#response.pipe(
       tap(() => this.form.reset()),
-      scan((values, value) => [...values, value], this.#initialValues)
+      scan(
+        (responses, response) => [...responses, response],
+        this.#initialResponses
+      )
     ),
-    { initialValue: this.#initialValues }
+    { initialValue: this.#initialResponses }
   );
 }

@@ -4,16 +4,16 @@
     <input type="text" formControlName="title" />
   </label>
   <button type="submit" [disabled]="submitDisabled()">submit</button>
-  @if (busy()) {
+  @if (isBusy()) {
   <div>submitting...</div>
-  } @if (error()) {
+  } @if (hasError()) {
   <div>{{ error() }}</div>
   }
   <ul>
-    @for (value of values(); track value.id) {
+    @for (response of responses(); track response.id) {
     <li>
-      {{ value.id }}
-      {{ value.title }}
+      {{ response.id }}
+      {{ response.title }}
     </li>
     }
   </ul>
