@@ -8,14 +8,14 @@ import { SearchTodoItem } from './todo.types';
   template: `
     <ul>
       @for (todo of todos(); track todo.id) {
-      <li>{{ todo.title }}</li>
-      } @empty { @if (emptyMessage() !== '') {
-      <li>{{ emptyMessage() }}</li>
-      } }
+      <li>
+        {{ todo.title }}
+        <code>TODO: delete button</code>
+      </li>
+      }
     </ul>
   `,
 })
 export class TodoListComponent {
-  readonly emptyMessage = input<string>('No todos found!');
   readonly todos = input.required<readonly SearchTodoItem[]>();
 }
