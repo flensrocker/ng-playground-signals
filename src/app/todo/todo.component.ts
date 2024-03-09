@@ -1,4 +1,10 @@
-import { Component, effect, inject, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  viewChild,
+} from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -12,22 +18,26 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { provideLocalStorageTodoService } from './todo-local-storage.service';
-import { TodoStore } from './todo.store';
 import { formSubmit } from '../utils';
 
+import { provideLocalStorageTodoService } from './todo-local-storage.service';
+import { TodoStore } from './todo.store';
+import { TodoListComponent } from './todo-list.component';
+
 @Component({
-  standalone: true,
   selector: 'app-todo',
-  templateUrl: './todo.component.html',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
+    TodoListComponent,
   ],
   providers: [provideLocalStorageTodoService(), TodoStore],
+  templateUrl: './todo.component.html',
 })
 export class TodoComponent {
   readonly store = inject(TodoStore);

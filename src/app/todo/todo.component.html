@@ -6,13 +6,7 @@
 <mat-error>{{ store.searchError() }}</mat-error>
 }
 
-<ul>
-  @for (todo of store.todos(); track todo.id) {
-  <li>{{ todo.title }}</li>
-  } @empty {
-  <li>No Todos found!</li>
-  }
-</ul>
+<app-todo-list [todos]="store.todos()" />
 
 <form #addNgForm="ngForm" [formGroup]="addForm">
   <mat-form-field>
