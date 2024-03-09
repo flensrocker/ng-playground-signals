@@ -6,21 +6,15 @@
 <mat-error>{{ store.searchError() }}</mat-error>
 }
 
-<app-todo-list [todos]="store.todos()" />
+<div>Found {{ store.totalCount() }} todos</div>
 
-<form #addNgForm="ngForm" [formGroup]="addForm">
-  <mat-form-field>
-    <mat-label>Title</mat-label>
-    <input matInput type="text" formControlName="title" />
-  </mat-form-field>
-  <button
-    type="submit"
-    mat-stroked-button
-    [disabled]="!addForm.valid || store.addBusy()"
-  >
-    create
-  </button>
-</form>
+<app-todo-list emptyMessage="" [todos]="store.todos()" />
+
+<app-todo-add
+  [disabled]="store.addBusy()"
+  [reset]="resetAddForm()"
+  (addTodo)="store.addTodo($any($event))"
+/>
 
 @if (store.addHasError()) {
 <mat-error>{{ store.addError() }}</mat-error>

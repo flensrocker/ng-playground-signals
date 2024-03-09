@@ -9,9 +9,9 @@ import { SearchTodoItem } from './todo.types';
     <ul>
       @for (todo of todos(); track todo.id) {
       <li>{{ todo.title }}</li>
-      } @empty {
-      <li>emptyMessage()</li>
-      }
+      } @empty { @if (emptyMessage() !== '') {
+      <li>{{ emptyMessage() }}</li>
+      } }
     </ul>
   `,
 })

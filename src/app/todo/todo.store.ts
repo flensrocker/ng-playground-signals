@@ -64,6 +64,7 @@ export const TodoStore = signalStore(
   withError('add'),
   withComputed((store) => ({
     todos: computed(() => store.searchResponse()?.todos ?? []),
+    totalCount: computed(() => store.searchResponse()?.totalCount ?? 0),
     busy: computed(() => store.searchBusy() || store.addBusy()),
   })),
   withMethods((store) => {
@@ -95,11 +96,18 @@ export const TodoStore = signalStore(
           })
         )
       ),
-      connectAddTodo: rxMethod<AddTodoRequest>(
+      addTodo: (addRequest: AddTodoRequest) => {
+        patchState(store, { addRequest });
+      },
+      connectAddTodo: rxMethod<AddTodoRequest | null>(
         pipe(
           tap(() => patchState(store, setBusy('add'))),
-          switchMap((request) =>
-            todoService.add(request).pipe(
+          switchMap((addRequest) => {
+            if (addRequest == null) {
+              return of({});
+            }
+
+            return todoService.add(addRequest).pipe(
               map(
                 (addResponse) =>
                   ({
@@ -114,8 +122,8 @@ export const TodoStore = signalStore(
                   ...setError('add', `${err}`),
                 } satisfies Partial<State>)
               )
-            )
-          ),
+            );
+          }),
           tap((state) => {
             patchState(store, state, clearBusy('add'));
           })
@@ -126,6 +134,7 @@ export const TodoStore = signalStore(
   withHooks({
     onInit(store) {
       store.searchTodos(store.searchRequest);
+      store.connectAddTodo(store.addRequest);
     },
   })
 );

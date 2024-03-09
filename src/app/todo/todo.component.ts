@@ -1,39 +1,26 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  effect,
+  computed,
   inject,
-  viewChild,
 } from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormGroupDirective,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
 
-import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-
-import { formSubmit } from '../utils';
 
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoStore } from './todo.store';
 import { TodoListComponent } from './todo-list.component';
+import { TodoAddComponent } from './todo-add.component';
 
 @Component({
   selector: 'app-todo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
-    MatButtonModule,
     MatFormFieldModule,
-    MatInputModule,
     MatProgressBarModule,
+    TodoAddComponent,
     TodoListComponent,
   ],
   providers: [provideLocalStorageTodoService(), TodoStore],
@@ -42,20 +29,7 @@ import { TodoListComponent } from './todo-list.component';
 export class TodoComponent {
   readonly store = inject(TodoStore);
 
-  readonly addForm = new FormGroup({
-    title: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
-  });
-  readonly addNgForm = viewChild<FormGroupDirective>('addNgForm');
-
-  constructor() {
-    this.store.connectAddTodo(formSubmit(this.addNgForm));
-    effect(() => {
-      if (this.store.addResponse() != null) {
-        this.addForm.reset();
-      }
-    });
-  }
+  readonly resetAddForm = computed(
+    () => !this.store.addBusy() && !this.store.addHasError()
+  );
 }
