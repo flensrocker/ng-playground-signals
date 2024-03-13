@@ -1,13 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 
-import { TodoService } from './todo.types';
+import { TodoEntity, TodoService } from './todo.types';
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
+import { TodoListComponent } from './todo-list.component';
 
 @Component({
   selector: 'app-todo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [TodoListComponent],
   providers: [provideLocalStorageTodoService()],
   template: `<h1>ToDo with Signals</h1>
 
@@ -15,9 +21,7 @@ import { provideLocalStorageTodoService } from './todo-local-storage.service';
       <code>TODO: search input</code>
     </div>
 
-    <div>
-      <code>TODO: todo list</code>
-    </div>
+    <app-todo-list [todos]="todos()" />
 
     <div>
       <code>TODO: add input</code>
@@ -25,4 +29,7 @@ import { provideLocalStorageTodoService } from './todo-local-storage.service';
 })
 export class TodoComponent {
   readonly #todoService = inject(TodoService);
+
+  // TODO: get from todoService.search
+  readonly todos = signal<readonly TodoEntity[]>([]);
 }
