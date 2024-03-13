@@ -8,18 +8,17 @@ import {
 import { TodoEntity, TodoService } from './todo.types';
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoListComponent } from './todo-list.component';
+import { TodoSearchComponent } from './todo-search.component';
 
 @Component({
   selector: 'app-todo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TodoListComponent],
+  imports: [TodoListComponent, TodoSearchComponent],
   providers: [provideLocalStorageTodoService()],
   template: `<h1>ToDo with Signals</h1>
 
-    <div>
-      <code>TODO: search input</code>
-    </div>
+    <app-todo-search />
 
     <app-todo-list [todos]="todos()" />
 

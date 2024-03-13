@@ -18,6 +18,12 @@ export type SearchTodoResponse = {
   readonly totalCount: number;
   readonly todos: readonly TodoEntity[];
 };
+export const initialSearchTodoRequest: SearchTodoRequest = {
+  filter: '',
+  status: null,
+  pageIndex: 0,
+  pageSize: 10,
+};
 
 export type AddTodoRequest = {
   readonly title: string;
