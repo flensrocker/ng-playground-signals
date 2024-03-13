@@ -5,10 +5,13 @@ import { Observable, delay, map, of } from 'rxjs';
 import {
   AddTodoRequest,
   AddTodoResponse,
+  ChangeTodoStatusRequest,
+  DelTodoRequest,
   SearchTodoRequest,
   SearchTodoResponse,
   TodoEntity,
   TodoService,
+  UpdateTodoTitleRequest,
 } from './todo.types';
 
 type TodoSchema = {
@@ -26,9 +29,7 @@ const filterTodos = (filter: SearchTodoRequest) => {
     const lowerFilter = filter.filter?.toLowerCase() ?? '';
     return (
       (filter.status == null || todo.status === filter.status) &&
-      (lowerFilter === '' ||
-        todo.title.toLowerCase().includes(lowerFilter) ||
-        todo.description.toLowerCase().includes(lowerFilter))
+      (lowerFilter === '' || todo.title.toLowerCase().includes(lowerFilter))
     );
   };
 };
@@ -59,7 +60,7 @@ export class LocalStorageTodoService extends TodoService {
 
   override search(request: SearchTodoRequest): Observable<SearchTodoResponse> {
     return of(request).pipe(
-      delay(200),
+      delay(100),
       map((request) => {
         if (request.filter.startsWith('err')) {
           throw new Error('Error while searching todos');
@@ -100,7 +101,6 @@ export class LocalStorageTodoService extends TodoService {
           id: crypto.randomUUID(),
           title: request.title,
           status: 'OPEN',
-          description: '',
         };
 
         const todoSchema = this.#getTodoSchema();
@@ -116,6 +116,84 @@ export class LocalStorageTodoService extends TodoService {
         return {
           id: todo.id,
         };
+      })
+    );
+  }
+
+  override del(request: DelTodoRequest): Observable<void> {
+    return of(request).pipe(
+      delay(100),
+      map((request) => {
+        const todoSchema = this.#getTodoSchema();
+
+        const todoIds = todoSchema.todoIds.filter(
+          (todoId) => todoId !== request.id
+        );
+        const todoNotFound = todoIds.length === todoSchema.todoIds.length;
+        if (todoNotFound) {
+          throw new Error('Todo not found');
+        }
+
+        delete todoSchema.todoMap[request.id];
+
+        this.#setTodoSchema({
+          ...todoSchema,
+          todoIds,
+        });
+      })
+    );
+  }
+
+  override changeStatus(request: ChangeTodoStatusRequest): Observable<void> {
+    return of(request).pipe(
+      delay(100),
+      map((request) => {
+        const todoSchema = this.#getTodoSchema();
+
+        const todo = todoSchema.todoMap[request.id];
+        if (todo == null) {
+          throw new Error('Todo not found');
+        }
+
+        if (todo.status !== request.status) {
+          this.#setTodoSchema({
+            ...todoSchema,
+            todoMap: {
+              ...todoSchema.todoMap,
+              [request.id]: {
+                ...todo,
+                status: request.status,
+              },
+            },
+          });
+        }
+      })
+    );
+  }
+
+  override updateTitle(request: UpdateTodoTitleRequest): Observable<void> {
+    return of(request).pipe(
+      delay(100),
+      map((request) => {
+        const todoSchema = this.#getTodoSchema();
+
+        const todo = todoSchema.todoMap[request.id];
+        if (todo == null) {
+          throw new Error('Todo not found');
+        }
+
+        if (todo.title !== request.title) {
+          this.#setTodoSchema({
+            ...todoSchema,
+            todoMap: {
+              ...todoSchema.todoMap,
+              [request.id]: {
+                ...todo,
+                title: request.title,
+              },
+            },
+          });
+        }
       })
     );
   }
