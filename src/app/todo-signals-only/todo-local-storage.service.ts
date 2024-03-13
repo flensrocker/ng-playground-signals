@@ -68,22 +68,18 @@ export class LocalStorageTodoService extends TodoService {
 
         const todoSchema = this.#getTodoSchema();
 
-        const matchingTodos = todoSchema.todoIds
+        const allMatchingTodos = todoSchema.todoIds
           .map((todoId) => todoSchema.todoMap[todoId])
           .filter((todo) => todo != null)
           .filter(filterTodos(request));
-        const todos = matchingTodos.slice(
+        const todosOfPage = allMatchingTodos.slice(
           request.pageIndex * request.pageSize,
           (request.pageIndex + 1) * request.pageSize
         );
 
         return {
-          totalCount: matchingTodos.length,
-          todos: todos.map((todo) => ({
-            id: todo.id,
-            title: todo.title,
-            status: todo.status,
-          })),
+          totalCount: allMatchingTodos.length,
+          todos: todosOfPage,
         };
       })
     );

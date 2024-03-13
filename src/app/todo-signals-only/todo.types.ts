@@ -14,14 +14,9 @@ export type SearchTodoRequest = {
   readonly pageIndex: number;
   readonly pageSize: number;
 };
-export type SearchTodoItem = {
-  readonly id: string;
-  readonly title: string;
-  readonly status: TodoStatus;
-};
 export type SearchTodoResponse = {
   readonly totalCount: number;
-  readonly todos: readonly SearchTodoItem[];
+  readonly todos: readonly TodoEntity[];
 };
 
 export type AddTodoRequest = {
