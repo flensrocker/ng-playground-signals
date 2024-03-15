@@ -18,7 +18,7 @@ import { TodoSearchComponent } from './todo-search.component';
   providers: [provideLocalStorageTodoService()],
   template: `<h1>ToDo with Signals</h1>
 
-    <app-todo-search />
+    <app-todo-search (searchFormOutput)="log($event)" />
 
     <app-todo-list [todos]="todos()" />
 
@@ -31,4 +31,8 @@ export class TodoComponent {
 
   // TODO: get from todoService.search
   readonly todos = signal<readonly TodoEntity[]>([]);
+
+  log(obj: unknown): void {
+    console.log(obj);
+  }
 }
