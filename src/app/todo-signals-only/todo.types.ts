@@ -2,6 +2,15 @@ import { Observable } from 'rxjs';
 
 export type TodoStatus = 'OPEN' | 'DONE' | 'DISMISSED';
 
+export const todoStatusList: readonly {
+  readonly value: TodoStatus;
+  readonly label: string;
+}[] = [
+  { value: 'OPEN', label: 'open' },
+  { value: 'DONE', label: 'done' },
+  { value: 'DISMISSED', label: 'dismissed' },
+];
+
 export type TodoEntity = {
   readonly id: string;
   readonly title: string;
