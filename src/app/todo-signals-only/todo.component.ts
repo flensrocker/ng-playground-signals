@@ -5,21 +5,37 @@ import {
   inject,
   model,
   signal,
+  viewChild,
 } from '@angular/core';
 
-import { TodoEntity, TodoService } from './todo.types';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+
+import {
+  SearchTodoRequest,
+  TodoService,
+  emptySearchTodoResponse,
+  initialSearchTodoRequest,
+} from './todo.types';
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoListComponent } from './todo-list.component';
 import {
   TodoSearchComponent,
   initialTodoSearchFormValue,
 } from './todo-search.component';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { map, switchMap } from 'rxjs';
+
+type TodoPage = Pick<SearchTodoRequest, 'pageIndex' | 'pageSize'>;
+const initialTodoPage: TodoPage = {
+  pageIndex: initialSearchTodoRequest.pageIndex,
+  pageSize: initialSearchTodoRequest.pageSize,
+};
 
 @Component({
   selector: 'app-todo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TodoListComponent, TodoSearchComponent],
+  imports: [MatPaginatorModule, TodoListComponent, TodoSearchComponent],
   providers: [provideLocalStorageTodoService()],
   template: `<h1>ToDo with Signals</h1>
 
@@ -31,9 +47,12 @@ import {
 
     <app-todo-list [todos]="todos()" />
 
-    <div>
-      <code>TODO: list paginator</code>
-    </div>
+    <mat-paginator
+      [pageSizeOptions]="[5, 10, 20, 50, 100]"
+      [length]="todoTotalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+    />
 
     <div>
       <code>TODO: add input</code>
@@ -46,10 +65,36 @@ export class TodoComponent {
   readonly searchStatus = model(initialTodoSearchFormValue.status);
   readonly searchSubmit = signal(initialTodoSearchFormValue);
 
+  readonly pageIndex = model(initialSearchTodoRequest.pageIndex);
+  readonly pageSize = model(initialSearchTodoRequest.pageSize);
+  readonly paginator = viewChild.required(MatPaginator);
+  readonly page = toSignal(
+    toObservable(this.paginator).pipe(
+      switchMap((paginator) =>
+        paginator.page.pipe(
+          map(
+            (pageEvent): TodoPage => ({
+              pageIndex: pageEvent.pageIndex,
+              pageSize: pageEvent.pageSize,
+            })
+          )
+        )
+      )
+    ),
+    {
+      initialValue: initialTodoPage,
+    }
+  );
+
   // TODO: get from todoService.search
-  readonly todos = signal<readonly TodoEntity[]>([]);
+  readonly todoTotalCount = signal(emptySearchTodoResponse.totalCount);
+  readonly todos = signal(emptySearchTodoResponse.todos);
 
   constructor() {
+    effect(() => {
+      const page = this.page();
+      console.log('page', page);
+    });
     effect(() => {
       const filter = this.searchFilter();
       console.log('filter', filter);

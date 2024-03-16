@@ -33,6 +33,10 @@ export const initialSearchTodoRequest: SearchTodoRequest = {
   pageIndex: 0,
   pageSize: 10,
 };
+export const emptySearchTodoResponse: SearchTodoResponse = {
+  totalCount: 0,
+  todos: [],
+};
 
 export type AddTodoRequest = {
   readonly title: string;
