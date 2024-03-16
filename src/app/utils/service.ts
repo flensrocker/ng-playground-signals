@@ -1,30 +1,30 @@
-export type ServiceIdle = {
+export type ServiceCallIdle = {
   readonly type: 'IDLE';
 };
 
-export type ServiceBusy<TRequest> = {
+export type ServiceCallBusy<TRequest> = {
   readonly type: 'BUSY';
   readonly request: TRequest;
 };
 
-export type ServiceSuccess<TRequest, TResponse> = {
+export type ServiceCallSuccess<TRequest, TResponse> = {
   readonly type: 'SUCCESS';
   readonly request: TRequest;
   readonly response: TResponse;
 };
 
-export type ServiceError<TRequest> = {
+export type ServiceCallError<TRequest> = {
   readonly type: 'ERROR';
   readonly request: TRequest;
   readonly error: unknown;
 };
 
-export type ServiceState<TRequest, TResponse> =
-  | ServiceIdle
-  | ServiceBusy<TRequest>
-  | ServiceSuccess<TRequest, TResponse>
-  | ServiceError<TRequest>;
+export type ServiceCallState<TRequest, TResponse> =
+  | ServiceCallIdle
+  | ServiceCallBusy<TRequest>
+  | ServiceCallSuccess<TRequest, TResponse>
+  | ServiceCallError<TRequest>;
 
-export const idleService: ServiceIdle = {
+export const idleServiceCall: ServiceCallIdle = {
   type: 'IDLE',
 };

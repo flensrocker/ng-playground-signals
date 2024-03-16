@@ -27,11 +27,11 @@ import {
 import {
   FormChange,
   FormSubmit,
-  ServiceBusy,
-  ServiceError,
-  ServiceState,
-  ServiceSuccess,
-  idleService,
+  ServiceCallBusy,
+  ServiceCallError,
+  ServiceCallState,
+  ServiceCallSuccess,
+  idleServiceCall,
 } from '../utils';
 
 import {
@@ -166,7 +166,9 @@ export class TodoComponent {
       switchMap(
         (
           searchRequest
-        ): Observable<ServiceState<SearchTodoRequest, SearchTodoResponse>> =>
+        ): Observable<
+          ServiceCallState<SearchTodoRequest, SearchTodoResponse>
+        > =>
           this.#todoService.search(searchRequest).pipe(
             map(
               (searchResponse) =>
@@ -174,7 +176,7 @@ export class TodoComponent {
                   type: 'SUCCESS',
                   request: searchRequest,
                   response: searchResponse,
-                } satisfies ServiceSuccess<
+                } satisfies ServiceCallSuccess<
                   SearchTodoRequest,
                   SearchTodoResponse
                 >)
@@ -184,17 +186,17 @@ export class TodoComponent {
                 type: 'ERROR',
                 request: searchRequest,
                 error: searchError ?? 'Unexpected error',
-              } satisfies ServiceError<SearchTodoRequest>)
+              } satisfies ServiceCallError<SearchTodoRequest>)
             ),
             startWith({
               type: 'BUSY',
               request: searchRequest,
-            } satisfies ServiceBusy<SearchTodoRequest>)
+            } satisfies ServiceCallBusy<SearchTodoRequest>)
           )
       )
     ),
     {
-      initialValue: idleService,
+      initialValue: idleServiceCall,
     }
   );
 
