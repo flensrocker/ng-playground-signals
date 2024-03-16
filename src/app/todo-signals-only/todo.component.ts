@@ -11,7 +11,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 
-import { debounce, delay, map, merge, of, switchMap } from 'rxjs';
+import { debounce, delay, merge, of, switchMap } from 'rxjs';
 
 import {
   SearchTodoRequest,
@@ -26,11 +26,17 @@ import {
   TodoSearchFormValue,
 } from './todo-search.component';
 
-type TodoPage = Pick<SearchTodoRequest, 'pageIndex' | 'pageSize'>;
-const initialTodoPage: TodoPage = {
-  pageIndex: initialSearchTodoRequest.pageIndex,
-  pageSize: initialSearchTodoRequest.pageSize,
+type FormChange<TFormValue> = {
+  readonly type: 'CHANGE';
+  readonly value: TFormValue;
 };
+type FormSubmit<TFormValue> = {
+  readonly type: 'SUBMIT';
+  readonly value: TFormValue;
+};
+type FormChangeSubmit<TFormValue> =
+  | FormChange<TFormValue>
+  | FormSubmit<TFormValue>;
 
 @Component({
   selector: 'app-todo',
@@ -60,75 +66,63 @@ const initialTodoPage: TodoPage = {
     </div>`,
 })
 export class TodoComponent {
+  readonly #searchDebounceTime = 500;
   readonly #todoService = inject(TodoService);
 
   readonly searchFilter = signal(initialSearchTodoRequest.filter);
   readonly searchStatus = signal(initialSearchTodoRequest.status);
+  readonly searchChanges = computed<TodoSearchFormValue>(() => ({
+    filter: this.searchFilter(),
+    status: this.searchStatus(),
+  }));
   readonly searchSubmit = signal<TodoSearchFormValue>({
     filter: this.searchFilter(),
     status: this.searchStatus(),
   });
 
   // TODO extract to form change/submit debounce helper function
-  readonly searchChanges$ = toObservable(
-    computed(
-      () =>
-        ({
-          type: 'CHANGE' as const,
-          value: {
-            filter: this.searchFilter(),
-            status: this.searchStatus(),
-          },
-        } as const)
-    )
+  readonly searchChanges$ = toObservable<FormChange<TodoSearchFormValue>>(
+    computed(() => ({
+      type: 'CHANGE',
+      value: this.searchChanges(),
+    }))
   );
-  readonly searchSubmits$ = toObservable(
-    computed(
-      () =>
-        ({
-          type: 'SUBMIT' as const,
-          value: {
-            ...this.searchSubmit(),
-            status: this.searchStatus(),
-          },
-        } as const)
-    )
+  readonly searchSubmits$ = toObservable<FormSubmit<TodoSearchFormValue>>(
+    computed(() => {
+      const submitted = this.searchSubmit();
+      const undebounced: Partial<TodoSearchFormValue> = {
+        status: this.searchStatus(),
+      };
+
+      return {
+        type: 'SUBMIT',
+        value: {
+          ...submitted,
+          ...undebounced,
+        },
+      };
+    })
   );
-  readonly search = toSignal(
+  readonly search = toSignal<FormChangeSubmit<TodoSearchFormValue>>(
     merge(this.searchChanges$, this.searchSubmits$).pipe(
       debounce(({ type }) =>
-        type === 'SUBMIT' ? of(true) : of(true).pipe(delay(500))
-      ),
-      map(({ value }) => value)
-    ),
-    { initialValue: this.searchSubmit() }
+        type === 'SUBMIT'
+          ? of(true)
+          : of(true).pipe(delay(this.#searchDebounceTime))
+      )
+    )
   );
 
   readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
   readonly pageSize = signal(initialSearchTodoRequest.pageSize);
   readonly paginator = viewChild.required(MatPaginator);
-  // TODO extract to paginator helper function
   readonly page = toSignal(
-    toObservable(this.paginator).pipe(
-      switchMap((paginator) =>
-        paginator.page.pipe(
-          map(
-            (pageEvent): TodoPage => ({
-              pageIndex: pageEvent.pageIndex,
-              pageSize: pageEvent.pageSize,
-            })
-          )
-        )
-      )
-    ),
-    {
-      initialValue: initialTodoPage,
-    }
+    toObservable(this.paginator).pipe(switchMap((paginator) => paginator.page))
   );
 
   readonly searchRequestChanges = computed((): SearchTodoRequest => {
-    const { pageIndex, pageSize } = this.page();
-    const search = this.search();
+    const { pageIndex, pageSize } = this.page() ?? initialSearchTodoRequest;
+    const search = this.search()?.value ?? initialSearchTodoRequest;
 
     return {
       ...search,
