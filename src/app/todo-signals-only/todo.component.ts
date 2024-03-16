@@ -12,7 +12,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 
-import { map, switchMap } from 'rxjs';
+import { debounce, delay, map, merge, of, switchMap } from 'rxjs';
 
 import {
   SearchTodoRequest,
@@ -44,8 +44,8 @@ const initialTodoPage: TodoPage = {
 
     <app-todo-search
       [(filter)]="searchFilter"
-      [(status)]="searchStatus"
-      (formSubmit)="searchSubmit.set($event)"
+      [(status)]="searchFormStatus"
+      (formSubmit)="searchFormSubmit.set($event)"
     />
 
     <app-todo-list [todos]="todos()" />
@@ -65,12 +65,60 @@ export class TodoComponent {
   readonly #todoService = inject(TodoService);
 
   readonly searchFilter = model(initialTodoSearchFormValue.filter);
-  readonly searchStatus = model(initialTodoSearchFormValue.status);
-  readonly searchSubmit = signal(initialTodoSearchFormValue);
+  readonly searchFormStatus = model(initialTodoSearchFormValue.status);
+  readonly searchStatus = computed(() =>
+    todoSearchStatusToRequest(this.searchFormStatus())
+  );
+  readonly searchFormSubmit = signal(initialTodoSearchFormValue);
+  readonly searchSubmit = computed(() => {
+    const search = this.searchFormSubmit();
+    const status = todoSearchStatusToRequest(search.status);
+
+    return {
+      ...search,
+      status,
+    };
+  });
+
+  // TODO extract to form change/submit debounce helper function
+  readonly searchChanges$ = toObservable(
+    computed(
+      () =>
+        ({
+          type: 'CHANGE' as const,
+          value: {
+            filter: this.searchFilter(),
+            status: this.searchStatus(),
+          },
+        } as const)
+    )
+  );
+  readonly searchSubmits$ = toObservable(
+    computed(
+      () =>
+        ({
+          type: 'SUBMIT' as const,
+          value: {
+            filter: this.searchSubmit().filter,
+            status: this.searchStatus(),
+          },
+        } as const)
+    )
+  );
+  readonly search = toSignal(
+    merge(this.searchChanges$, this.searchSubmits$).pipe(
+      debounce(({ type }) =>
+        type === 'SUBMIT' ? of(true) : of(true).pipe(delay(300))
+      ),
+      map(({ value }) => value)
+    ),
+    { initialValue: this.searchSubmit() }
+  );
 
   readonly pageIndex = model(initialSearchTodoRequest.pageIndex);
   readonly pageSize = model(initialSearchTodoRequest.pageSize);
   readonly paginator = viewChild.required(MatPaginator);
+  // TODO extract to paginator helper function
   readonly page = toSignal(
     toObservable(this.paginator).pipe(
       switchMap((paginator) =>
@@ -91,12 +139,10 @@ export class TodoComponent {
 
   readonly searchRequestChanges = computed((): SearchTodoRequest => {
     const { pageIndex, pageSize } = this.page();
-    const filter = this.searchFilter();
-    const status = todoSearchStatusToRequest(this.searchStatus());
+    const search = this.search();
 
     return {
-      filter,
-      status,
+      ...search,
       pageIndex,
       pageSize,
     };
@@ -110,10 +156,6 @@ export class TodoComponent {
     effect(() => {
       const searchRequestChanges = this.searchRequestChanges();
       console.log('searchRequestChanges', searchRequestChanges);
-    });
-    effect(() => {
-      const submitted = this.searchSubmit();
-      console.log('submitted', submitted);
     });
   }
 }
