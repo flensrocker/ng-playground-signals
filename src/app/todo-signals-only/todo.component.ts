@@ -1,14 +1,19 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
+  model,
   signal,
 } from '@angular/core';
 
-import { TodoEntity, TodoService } from './todo.types';
+import { TodoEntity, TodoService, TodoStatus } from './todo.types';
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoListComponent } from './todo-list.component';
-import { TodoSearchComponent } from './todo-search.component';
+import {
+  TodoSearchFormValue,
+  TodoSearchComponent,
+} from './todo-search.component';
 
 @Component({
   selector: 'app-todo',
@@ -18,9 +23,17 @@ import { TodoSearchComponent } from './todo-search.component';
   providers: [provideLocalStorageTodoService()],
   template: `<h1>ToDo with Signals</h1>
 
-    <app-todo-search (searchFormOutput)="log($event)" />
+    <app-todo-search
+      [(filter)]="searchFilter"
+      [(status)]="searchStatus"
+      (formSubmit)="searchSubmit.set($event)"
+    />
 
     <app-todo-list [todos]="todos()" />
+
+    <div>
+      <code>TODO: list paginator</code>
+    </div>
 
     <div>
       <code>TODO: add input</code>
@@ -29,10 +42,25 @@ import { TodoSearchComponent } from './todo-search.component';
 export class TodoComponent {
   readonly #todoService = inject(TodoService);
 
+  readonly searchFilter = model<string>('');
+  readonly searchStatus = model<TodoStatus | ''>('');
+  readonly searchSubmit = signal<TodoSearchFormValue | null>(null);
+
   // TODO: get from todoService.search
   readonly todos = signal<readonly TodoEntity[]>([]);
 
-  log(obj: unknown): void {
-    console.log(obj);
+  constructor() {
+    effect(() => {
+      const filter = this.searchFilter();
+      console.log('filter', filter);
+    });
+    effect(() => {
+      const status = this.searchStatus();
+      console.log('status', status);
+    });
+    effect(() => {
+      const submitted = this.searchSubmit();
+      console.log('submitted', submitted);
+    });
   }
 }
