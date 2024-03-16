@@ -11,7 +11,6 @@ import { TodoEntity, TodoService } from './todo.types';
 import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoListComponent } from './todo-list.component';
 import {
-  TodoSearchFormValue,
   TodoSearchComponent,
   initialTodoSearchFormValue,
 } from './todo-search.component';
@@ -43,15 +42,9 @@ import {
 export class TodoComponent {
   readonly #todoService = inject(TodoService);
 
-  readonly searchFilter = model<TodoSearchFormValue['filter']>(
-    initialTodoSearchFormValue.filter
-  );
-  readonly searchStatus = model<TodoSearchFormValue['status']>(
-    initialTodoSearchFormValue.status
-  );
-  readonly searchSubmit = signal<TodoSearchFormValue>(
-    initialTodoSearchFormValue
-  );
+  readonly searchFilter = model(initialTodoSearchFormValue.filter);
+  readonly searchStatus = model(initialTodoSearchFormValue.status);
+  readonly searchSubmit = signal(initialTodoSearchFormValue);
 
   // TODO: get from todoService.search
   readonly todos = signal<readonly TodoEntity[]>([]);
