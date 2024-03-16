@@ -24,8 +24,7 @@ import { provideLocalStorageTodoService } from './todo-local-storage.service';
 import { TodoListComponent } from './todo-list.component';
 import {
   TodoSearchComponent,
-  initialTodoSearchFormValue,
-  todoSearchStatusToRequest,
+  TodoSearchFormValue,
 } from './todo-search.component';
 
 type TodoPage = Pick<SearchTodoRequest, 'pageIndex' | 'pageSize'>;
@@ -44,8 +43,8 @@ const initialTodoPage: TodoPage = {
 
     <app-todo-search
       [(filter)]="searchFilter"
-      [(status)]="searchFormStatus"
-      (formSubmit)="searchFormSubmit.set($event)"
+      [(status)]="searchStatus"
+      (formSubmit)="searchSubmit.set($event)"
     />
 
     <app-todo-list [todos]="todos()" />
@@ -64,20 +63,11 @@ const initialTodoPage: TodoPage = {
 export class TodoComponent {
   readonly #todoService = inject(TodoService);
 
-  readonly searchFilter = model(initialTodoSearchFormValue.filter);
-  readonly searchFormStatus = model(initialTodoSearchFormValue.status);
-  readonly searchStatus = computed(() =>
-    todoSearchStatusToRequest(this.searchFormStatus())
-  );
-  readonly searchFormSubmit = signal(initialTodoSearchFormValue);
-  readonly searchSubmit = computed(() => {
-    const search = this.searchFormSubmit();
-    const status = todoSearchStatusToRequest(search.status);
-
-    return {
-      ...search,
-      status,
-    };
+  readonly searchFilter = model(initialSearchTodoRequest.filter);
+  readonly searchStatus = model(initialSearchTodoRequest.status);
+  readonly searchSubmit = signal<TodoSearchFormValue>({
+    filter: this.searchFilter(),
+    status: this.searchStatus(),
   });
 
   // TODO extract to form change/submit debounce helper function
@@ -99,7 +89,7 @@ export class TodoComponent {
         ({
           type: 'SUBMIT' as const,
           value: {
-            filter: this.searchSubmit().filter,
+            ...this.searchSubmit(),
             status: this.searchStatus(),
           },
         } as const)
@@ -108,7 +98,7 @@ export class TodoComponent {
   readonly search = toSignal(
     merge(this.searchChanges$, this.searchSubmits$).pipe(
       debounce(({ type }) =>
-        type === 'SUBMIT' ? of(true) : of(true).pipe(delay(300))
+        type === 'SUBMIT' ? of(true) : of(true).pipe(delay(500))
       ),
       map(({ value }) => value)
     ),

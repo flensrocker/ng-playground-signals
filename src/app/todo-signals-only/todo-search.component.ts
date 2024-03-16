@@ -19,46 +19,10 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { formSubmit } from '../utils';
 import { outputFromObservable } from '@angular/core/rxjs-interop';
 
-export type TodoSearchStatusAll = '';
-export const todoSearchStatusAll: TodoSearchStatusAll = '';
-
 export type TodoSearchFormValue = Omit<
   SearchTodoRequest,
-  'pageIndex' | 'pageSize' | 'status'
-> & {
-  status: NonNullable<SearchTodoRequest['status']> | TodoSearchStatusAll;
-};
-
-export const todoSearchStatusFromRequest = (
-  status: SearchTodoRequest['status']
-): TodoSearchFormValue['status'] =>
-  status == null ? todoSearchStatusAll : status;
-
-export const todoSearchStatusToRequest = (
-  status: TodoSearchFormValue['status']
-): SearchTodoRequest['status'] => (status == '' ? null : status);
-
-export const todoSearchFormValueFromRequest = (
-  request: SearchTodoRequest
-): TodoSearchFormValue => ({
-  filter: request.filter,
-  status: todoSearchStatusFromRequest(request.status),
-});
-
-export const todoSearchFormValueToRequest = (
-  formValue: TodoSearchFormValue,
-  pageIndex: number = initialSearchTodoRequest.pageIndex,
-  pageSize: number = initialSearchTodoRequest.pageSize
-): SearchTodoRequest => ({
-  filter: formValue.filter,
-  status: todoSearchStatusToRequest(formValue.status),
-  pageIndex,
-  pageSize,
-});
-
-export const initialTodoSearchFormValue = todoSearchFormValueFromRequest(
-  initialSearchTodoRequest
-);
+  'pageIndex' | 'pageSize'
+>;
 
 @Component({
   selector: 'app-todo-search',
@@ -76,10 +40,10 @@ export const initialTodoSearchFormValue = todoSearchFormValueFromRequest(
       <mat-label>Filter</mat-label>
       <input type="text" name="filter" matInput [(ngModel)]="filter" />
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field floatLabel="always">
       <mat-label>Status</mat-label>
-      <mat-select name="status" [(ngModel)]="status">
-        <mat-option [value]="todoSearchStatusAll">all</mat-option>
+      <mat-select name="status" placeholder="all" [(ngModel)]="status">
+        <mat-option [value]="null">all</mat-option>
         @for (option of todoStatusList; track option.value) {
         <mat-option [value]="option.value">{{ option.label }}</mat-option>
         }
@@ -88,11 +52,10 @@ export const initialTodoSearchFormValue = todoSearchFormValueFromRequest(
   </form>`,
 })
 export class TodoSearchComponent {
-  readonly todoSearchStatusAll = todoSearchStatusAll;
   readonly todoStatusList = todoStatusList;
 
-  readonly filter = model(initialTodoSearchFormValue.filter);
-  readonly status = model(initialTodoSearchFormValue.status);
+  readonly filter = model(initialSearchTodoRequest.filter);
+  readonly status = model(initialSearchTodoRequest.status);
 
   readonly form = viewChild.required<NgForm>('ngForm');
   readonly formSubmit = outputFromObservable(
