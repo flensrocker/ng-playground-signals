@@ -9,6 +9,18 @@ import {
 
 import { EMPTY, Observable, fromEvent, map, startWith, switchMap } from 'rxjs';
 
+export type FormChange<TFormValue> = {
+  readonly type: 'CHANGE';
+  readonly value: TFormValue;
+};
+export type FormSubmit<TFormValue> = {
+  readonly type: 'SUBMIT';
+  readonly value: TFormValue;
+};
+export type FormChangeSubmit<TFormValue> =
+  | FormChange<TFormValue>
+  | FormSubmit<TFormValue>;
+
 export const formSubmit = <TFormValue>(
   ngForm$: Signal<NgForm | FormGroupDirective | undefined>
 ): Observable<TFormValue> =>

@@ -60,7 +60,7 @@ export class LocalStorageTodoService extends TodoService {
 
   override search(request: SearchTodoRequest): Observable<SearchTodoResponse> {
     return of(request).pipe(
-      delay(100),
+      delay(500),
       map((request) => {
         if (request.filter.startsWith('err')) {
           throw new Error('Error while searching todos');
@@ -87,7 +87,7 @@ export class LocalStorageTodoService extends TodoService {
 
   override add(request: AddTodoRequest): Observable<AddTodoResponse> {
     return of(request).pipe(
-      delay(100),
+      delay(500),
       map((request) => {
         if (request.title.startsWith('err')) {
           throw new Error('Error while adding todo');
@@ -118,7 +118,7 @@ export class LocalStorageTodoService extends TodoService {
 
   override del(request: DelTodoRequest): Observable<void> {
     return of(request).pipe(
-      delay(100),
+      delay(500),
       map((request) => {
         const todoSchema = this.#getTodoSchema();
 
@@ -142,7 +142,7 @@ export class LocalStorageTodoService extends TodoService {
 
   override changeStatus(request: ChangeTodoStatusRequest): Observable<void> {
     return of(request).pipe(
-      delay(100),
+      delay(500),
       map((request) => {
         const todoSchema = this.#getTodoSchema();
 
@@ -169,7 +169,7 @@ export class LocalStorageTodoService extends TodoService {
 
   override updateTitle(request: UpdateTodoTitleRequest): Observable<void> {
     return of(request).pipe(
-      delay(100),
+      delay(500),
       map((request) => {
         const todoSchema = this.#getTodoSchema();
 

@@ -2,19 +2,41 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { debounce, delay, merge, of, switchMap } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  debounce,
+  delay,
+  map,
+  merge,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
+
+import {
+  FormChange,
+  FormSubmit,
+  ServiceBusy,
+  ServiceError,
+  ServiceState,
+  ServiceSuccess,
+  idleService,
+} from '../utils';
 
 import {
   SearchTodoRequest,
+  SearchTodoResponse,
   TodoService,
   emptySearchTodoResponse,
   initialSearchTodoRequest,
@@ -26,25 +48,19 @@ import {
   TodoSearchFormValue,
 } from './todo-search.component';
 
-type FormChange<TFormValue> = {
-  readonly type: 'CHANGE';
-  readonly value: TFormValue;
-};
-type FormSubmit<TFormValue> = {
-  readonly type: 'SUBMIT';
-  readonly value: TFormValue;
-};
-type FormChangeSubmit<TFormValue> =
-  | FormChange<TFormValue>
-  | FormSubmit<TFormValue>;
-
 @Component({
   selector: 'app-todo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatPaginatorModule, TodoListComponent, TodoSearchComponent],
+  imports: [
+    MatFormFieldModule,
+    MatPaginatorModule,
+    MatProgressBarModule,
+    TodoListComponent,
+    TodoSearchComponent,
+  ],
   providers: [provideLocalStorageTodoService()],
-  template: `<h1>ToDo with Signals</h1>
+  template: `<h1>TODO with Signals</h1>
 
     <app-todo-search
       [(filter)]="searchFilter"
@@ -52,7 +68,18 @@ type FormChangeSubmit<TFormValue> =
       (formSubmit)="searchSubmit.set($event)"
     />
 
+    @if (showProgress()) {
+    <mat-progress-bar mode="indeterminate" />
+    } @else if (showError()) {
+    <div>
+      <mat-error>{{ error() }}</mat-error>
+    </div>
+
+    } @if (showEmptyResult()) {
+    <div>No todos found.</div>
+    } @else {
     <app-todo-list [todos]="todos()" />
+    }
 
     <mat-paginator
       [pageSizeOptions]="[5, 10, 20, 50, 100]"
@@ -62,7 +89,7 @@ type FormChangeSubmit<TFormValue> =
     />
 
     <div>
-      <code>TODO: add input</code>
+      <code>TODO: TodoAddComponent, TodoEditComponent</code>
     </div>`,
 })
 export class TodoComponent {
@@ -103,13 +130,14 @@ export class TodoComponent {
       };
     })
   );
-  readonly search = toSignal<FormChangeSubmit<TodoSearchFormValue>>(
+  readonly search = toSignal(
     merge(this.searchChanges$, this.searchSubmits$).pipe(
       debounce(({ type }) =>
         type === 'SUBMIT'
           ? of(true)
           : of(true).pipe(delay(this.#searchDebounceTime))
-      )
+      ),
+      map(({ value }) => value)
     )
   );
 
@@ -120,9 +148,10 @@ export class TodoComponent {
     toObservable(this.paginator).pipe(switchMap((paginator) => paginator.page))
   );
 
-  readonly searchRequestChanges = computed((): SearchTodoRequest => {
+  // TODO reset pageIndex on non-page changes
+  readonly searchRequest = computed((): SearchTodoRequest => {
     const { pageIndex, pageSize } = this.page() ?? initialSearchTodoRequest;
-    const search = this.search()?.value ?? initialSearchTodoRequest;
+    const search = this.search() ?? initialSearchTodoRequest;
 
     return {
       ...search,
@@ -131,14 +160,68 @@ export class TodoComponent {
     };
   });
 
-  // TODO: get from todoService.search
-  readonly todoTotalCount = signal(emptySearchTodoResponse.totalCount);
-  readonly todos = signal(emptySearchTodoResponse.todos);
+  // TODO extract to service-state helper function
+  readonly searchState = toSignal(
+    toObservable(this.searchRequest).pipe(
+      switchMap(
+        (
+          searchRequest
+        ): Observable<ServiceState<SearchTodoRequest, SearchTodoResponse>> =>
+          this.#todoService.search(searchRequest).pipe(
+            map(
+              (searchResponse) =>
+                ({
+                  type: 'SUCCESS',
+                  request: searchRequest,
+                  response: searchResponse,
+                } satisfies ServiceSuccess<
+                  SearchTodoRequest,
+                  SearchTodoResponse
+                >)
+            ),
+            catchError((searchError) =>
+              of({
+                type: 'ERROR',
+                request: searchRequest,
+                error: searchError ?? 'Unexpected error',
+              } satisfies ServiceError<SearchTodoRequest>)
+            ),
+            startWith({
+              type: 'BUSY',
+              request: searchRequest,
+            } satisfies ServiceBusy<SearchTodoRequest>)
+          )
+      )
+    ),
+    {
+      initialValue: idleService,
+    }
+  );
 
-  constructor() {
-    effect(() => {
-      const searchRequestChanges = this.searchRequestChanges();
-      console.log('searchRequestChanges', searchRequestChanges);
-    });
-  }
+  readonly showProgress = computed(() => this.searchState().type === 'BUSY');
+
+  readonly todoTotalCount = computed(() => {
+    const searchState = this.searchState();
+    return searchState.type === 'SUCCESS'
+      ? searchState.response.totalCount
+      : emptySearchTodoResponse.totalCount;
+  });
+  readonly todos = computed(() => {
+    const searchState = this.searchState();
+    return searchState.type === 'SUCCESS'
+      ? searchState.response.todos
+      : emptySearchTodoResponse.todos;
+  });
+  readonly showEmptyResult = computed(() => {
+    const searchState = this.searchState();
+    return (
+      searchState.type === 'SUCCESS' && searchState.response.totalCount === 0
+    );
+  });
+
+  readonly showError = computed(() => this.searchState().type === 'ERROR');
+  readonly error = computed(() => {
+    const searchState = this.searchState();
+    return searchState.type === 'ERROR' ? `${searchState.error}` : undefined;
+  });
 }

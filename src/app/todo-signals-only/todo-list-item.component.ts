@@ -6,7 +6,7 @@ import { TodoEntity } from './todo.types';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
-  template: `{{ todo().title }}`,
+  template: `<div>{{ todo().title }}</div>`,
 })
 export class TodoListItemComponent {
   readonly todo = input.required<TodoEntity>();
