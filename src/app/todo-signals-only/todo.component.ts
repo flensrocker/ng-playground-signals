@@ -4,7 +4,6 @@ import {
   computed,
   effect,
   inject,
-  model,
   signal,
   viewChild,
 } from '@angular/core';
@@ -63,8 +62,8 @@ const initialTodoPage: TodoPage = {
 export class TodoComponent {
   readonly #todoService = inject(TodoService);
 
-  readonly searchFilter = model(initialSearchTodoRequest.filter);
-  readonly searchStatus = model(initialSearchTodoRequest.status);
+  readonly searchFilter = signal(initialSearchTodoRequest.filter);
+  readonly searchStatus = signal(initialSearchTodoRequest.status);
   readonly searchSubmit = signal<TodoSearchFormValue>({
     filter: this.searchFilter(),
     status: this.searchStatus(),
@@ -105,8 +104,8 @@ export class TodoComponent {
     { initialValue: this.searchSubmit() }
   );
 
-  readonly pageIndex = model(initialSearchTodoRequest.pageIndex);
-  readonly pageSize = model(initialSearchTodoRequest.pageSize);
+  readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
+  readonly pageSize = signal(initialSearchTodoRequest.pageSize);
   readonly paginator = viewChild.required(MatPaginator);
   // TODO extract to paginator helper function
   readonly page = toSignal(
