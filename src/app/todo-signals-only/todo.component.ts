@@ -1,14 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   model,
   signal,
   viewChild,
 } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+
+import { map, switchMap } from 'rxjs';
 
 import {
   SearchTodoRequest,
@@ -21,9 +25,8 @@ import { TodoListComponent } from './todo-list.component';
 import {
   TodoSearchComponent,
   initialTodoSearchFormValue,
+  todoSearchStatusToRequest,
 } from './todo-search.component';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { map, switchMap } from 'rxjs';
 
 type TodoPage = Pick<SearchTodoRequest, 'pageIndex' | 'pageSize'>;
 const initialTodoPage: TodoPage = {
@@ -86,22 +89,27 @@ export class TodoComponent {
     }
   );
 
+  readonly searchRequestChanges = computed((): SearchTodoRequest => {
+    const { pageIndex, pageSize } = this.page();
+    const filter = this.searchFilter();
+    const status = todoSearchStatusToRequest(this.searchStatus());
+
+    return {
+      filter,
+      status,
+      pageIndex,
+      pageSize,
+    };
+  });
+
   // TODO: get from todoService.search
   readonly todoTotalCount = signal(emptySearchTodoResponse.totalCount);
   readonly todos = signal(emptySearchTodoResponse.todos);
 
   constructor() {
     effect(() => {
-      const page = this.page();
-      console.log('page', page);
-    });
-    effect(() => {
-      const filter = this.searchFilter();
-      console.log('filter', filter);
-    });
-    effect(() => {
-      const status = this.searchStatus();
-      console.log('status', status);
+      const searchRequestChanges = this.searchRequestChanges();
+      console.log('searchRequestChanges', searchRequestChanges);
     });
     effect(() => {
       const submitted = this.searchSubmit();

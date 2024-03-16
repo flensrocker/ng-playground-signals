@@ -29,11 +29,31 @@ export type TodoSearchFormValue = Omit<
   status: NonNullable<SearchTodoRequest['status']> | TodoSearchStatusAll;
 };
 
+export const todoSearchStatusFromRequest = (
+  status: SearchTodoRequest['status']
+): TodoSearchFormValue['status'] =>
+  status == null ? todoSearchStatusAll : status;
+
+export const todoSearchStatusToRequest = (
+  status: TodoSearchFormValue['status']
+): SearchTodoRequest['status'] => (status == '' ? null : status);
+
 export const todoSearchFormValueFromRequest = (
   request: SearchTodoRequest
 ): TodoSearchFormValue => ({
   filter: request.filter,
-  status: request.status ?? todoSearchStatusAll,
+  status: todoSearchStatusFromRequest(request.status),
+});
+
+export const todoSearchFormValueToRequest = (
+  formValue: TodoSearchFormValue,
+  pageIndex: number = initialSearchTodoRequest.pageIndex,
+  pageSize: number = initialSearchTodoRequest.pageSize
+): SearchTodoRequest => ({
+  filter: formValue.filter,
+  status: todoSearchStatusToRequest(formValue.status),
+  pageIndex,
+  pageSize,
 });
 
 export const initialTodoSearchFormValue = todoSearchFormValueFromRequest(
