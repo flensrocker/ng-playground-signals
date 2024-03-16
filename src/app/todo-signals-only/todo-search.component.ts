@@ -74,7 +74,7 @@ export class TodoSearchComponent {
   readonly filter = model(initialTodoSearchFormValue.filter);
   readonly status = model(initialTodoSearchFormValue.status);
 
-  readonly form = viewChild<NgForm>('ngForm');
+  readonly form = viewChild.required<NgForm>('ngForm');
   readonly formSubmit = outputFromObservable(
     formSubmit<TodoSearchFormValue>(this.form)
   );
