@@ -141,17 +141,19 @@ export class TodoComponent {
     };
   });
 
-  readonly searchState = serviceState(this.searchRequest, (searchRequest) =>
-    this.#todoService.search(searchRequest)
+  readonly searchState = serviceState(
+    this.searchRequest,
+    (searchRequest) => this.#todoService.search(searchRequest),
+    emptySearchTodoResponse
   );
 
   readonly todoTotalCount = computed(
-    () => (this.searchState.response() ?? emptySearchTodoResponse).totalCount
+    () => this.searchState.response().totalCount
   );
-  readonly todos = computed(
-    () => (this.searchState.response() ?? emptySearchTodoResponse).todos
-  );
+  readonly todos = computed(() => this.searchState.response().todos);
   readonly hasNoResult = computed(
-    () => this.searchState.response()?.totalCount === 0
+    () =>
+      this.searchState.serviceCall().type === 'SUCCESS' &&
+      this.searchState.response().totalCount === 0
   );
 }

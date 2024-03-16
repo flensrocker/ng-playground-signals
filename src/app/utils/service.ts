@@ -42,19 +42,35 @@ export const idleServiceCall: ServiceCallIdle = {
   type: 'IDLE',
 };
 
-export type ServiceState<TRequest, TResponse> = {
+export type ServiceStateWithDefaultResponse<TRequest, TResponse> = {
   readonly serviceCall: Signal<ServiceCallState<TRequest, TResponse>>;
   readonly isBusy: Signal<boolean>;
   readonly request: Signal<TRequest | undefined>;
-  readonly response: Signal<TResponse | undefined>;
+  readonly response: Signal<TResponse>;
   readonly hasError: Signal<boolean>;
   readonly error: Signal<string | undefined>;
 };
+export type ServiceState<TRequest, TResponse> = ServiceStateWithDefaultResponse<
+  TRequest,
+  TResponse | undefined
+>;
 
-export const serviceState = <TRequest, TResponse>(
+export function serviceState<TRequest, TResponse>(
   serviceRequest: Signal<TRequest>,
   service: (request: TRequest) => Observable<TResponse>
-): ServiceState<TRequest, TResponse> => {
+): ServiceState<TRequest, TResponse>;
+
+export function serviceState<TRequest, TResponse>(
+  serviceRequest: Signal<TRequest>,
+  service: (request: TRequest) => Observable<TResponse>,
+  defaultResponse: TResponse
+): ServiceStateWithDefaultResponse<TRequest, TResponse>;
+
+export function serviceState<TRequest, TResponse>(
+  serviceRequest: Signal<TRequest>,
+  service: (request: TRequest) => Observable<TResponse>,
+  defaultResponse?: TResponse
+): ServiceState<TRequest, TResponse> {
   const serviceCall = toSignal(
     toObservable(serviceRequest).pipe(
       switchMap(
@@ -95,7 +111,9 @@ export const serviceState = <TRequest, TResponse>(
   });
   const response = computed(() => {
     const searchState = serviceCall();
-    return searchState.type === 'SUCCESS' ? searchState.response : undefined;
+    return searchState.type === 'SUCCESS'
+      ? searchState.response
+      : defaultResponse;
   });
   const hasError = computed(() => serviceCall().type === 'ERROR');
   const error = computed(() => {
@@ -111,4 +129,4 @@ export const serviceState = <TRequest, TResponse>(
     hasError,
     error,
   };
-};
+}
