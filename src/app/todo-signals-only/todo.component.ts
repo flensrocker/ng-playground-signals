@@ -12,31 +12,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import {
-  Observable,
-  catchError,
-  debounce,
-  delay,
-  map,
-  merge,
-  of,
-  startWith,
-  switchMap,
-} from 'rxjs';
+import { debounce, delay, map, merge, of, switchMap } from 'rxjs';
 
-import {
-  FormChange,
-  FormSubmit,
-  ServiceCallBusy,
-  ServiceCallError,
-  ServiceCallState,
-  ServiceCallSuccess,
-  idleServiceCall,
-} from '../utils';
+import { FormChange, FormSubmit, serviceState } from '../utils';
 
 import {
   SearchTodoRequest,
-  SearchTodoResponse,
   TodoService,
   emptySearchTodoResponse,
   initialSearchTodoRequest,
@@ -68,14 +49,14 @@ import {
       (formSubmit)="searchSubmit.set($event)"
     />
 
-    @if (showProgress()) {
+    @if (searchState.isBusy()) {
     <mat-progress-bar mode="indeterminate" />
-    } @else if (showError()) {
+    } @else if (searchState.hasError()) {
     <div>
-      <mat-error>{{ error() }}</mat-error>
+      <mat-error>{{ searchState.error() }}</mat-error>
     </div>
 
-    } @if (showEmptyResult()) {
+    } @if (hasNoResult()) {
     <div>No todos found.</div>
     } @else {
     <app-todo-list [todos]="todos()" />
@@ -160,70 +141,17 @@ export class TodoComponent {
     };
   });
 
-  // TODO extract to service-state helper function
-  readonly searchState = toSignal(
-    toObservable(this.searchRequest).pipe(
-      switchMap(
-        (
-          searchRequest
-        ): Observable<
-          ServiceCallState<SearchTodoRequest, SearchTodoResponse>
-        > =>
-          this.#todoService.search(searchRequest).pipe(
-            map(
-              (searchResponse) =>
-                ({
-                  type: 'SUCCESS',
-                  request: searchRequest,
-                  response: searchResponse,
-                } satisfies ServiceCallSuccess<
-                  SearchTodoRequest,
-                  SearchTodoResponse
-                >)
-            ),
-            catchError((searchError) =>
-              of({
-                type: 'ERROR',
-                request: searchRequest,
-                error: searchError ?? 'Unexpected error',
-              } satisfies ServiceCallError<SearchTodoRequest>)
-            ),
-            startWith({
-              type: 'BUSY',
-              request: searchRequest,
-            } satisfies ServiceCallBusy<SearchTodoRequest>)
-          )
-      )
-    ),
-    {
-      initialValue: idleServiceCall,
-    }
+  readonly searchState = serviceState(this.searchRequest, (searchRequest) =>
+    this.#todoService.search(searchRequest)
   );
 
-  readonly showProgress = computed(() => this.searchState().type === 'BUSY');
-
-  readonly todoTotalCount = computed(() => {
-    const searchState = this.searchState();
-    return searchState.type === 'SUCCESS'
-      ? searchState.response.totalCount
-      : emptySearchTodoResponse.totalCount;
-  });
-  readonly todos = computed(() => {
-    const searchState = this.searchState();
-    return searchState.type === 'SUCCESS'
-      ? searchState.response.todos
-      : emptySearchTodoResponse.todos;
-  });
-  readonly showEmptyResult = computed(() => {
-    const searchState = this.searchState();
-    return (
-      searchState.type === 'SUCCESS' && searchState.response.totalCount === 0
-    );
-  });
-
-  readonly showError = computed(() => this.searchState().type === 'ERROR');
-  readonly error = computed(() => {
-    const searchState = this.searchState();
-    return searchState.type === 'ERROR' ? `${searchState.error}` : undefined;
-  });
+  readonly todoTotalCount = computed(
+    () => (this.searchState.response() ?? emptySearchTodoResponse).totalCount
+  );
+  readonly todos = computed(
+    () => (this.searchState.response() ?? emptySearchTodoResponse).todos
+  );
+  readonly hasNoResult = computed(
+    () => this.searchState.response()?.totalCount === 0
+  );
 }
