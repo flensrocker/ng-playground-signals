@@ -52,13 +52,13 @@ export type TodoSearchFormValue = Omit<
   </form>`,
 })
 export class TodoSearchComponent {
-  readonly todoStatusList = todoStatusList;
+  protected readonly todoStatusList = todoStatusList;
 
   readonly filter = model(initialSearchTodoRequest.filter);
   readonly status = model(initialSearchTodoRequest.status);
 
-  readonly form = viewChild.required<NgForm>('ngForm');
+  readonly #form = viewChild.required<NgForm>('ngForm');
   readonly formSubmit = outputFromObservable(
-    formSubmit<TodoSearchFormValue>(this.form)
+    formSubmit<TodoSearchFormValue>(this.#form)
   );
 }

@@ -77,25 +77,25 @@ export class TodoComponent {
   readonly #searchDebounceTime = 500;
   readonly #todoService = inject(TodoService);
 
-  readonly searchFilter = signal(initialSearchTodoRequest.filter);
-  readonly searchStatus = signal(initialSearchTodoRequest.status);
-  readonly searchChanges = computed<TodoSearchFormValue>(() => ({
+  protected readonly searchFilter = signal(initialSearchTodoRequest.filter);
+  protected readonly searchStatus = signal(initialSearchTodoRequest.status);
+  readonly #searchChanges = computed<TodoSearchFormValue>(() => ({
     filter: this.searchFilter(),
     status: this.searchStatus(),
   }));
-  readonly searchSubmit = signal<TodoSearchFormValue>({
+  protected readonly searchSubmit = signal<TodoSearchFormValue>({
     filter: this.searchFilter(),
     status: this.searchStatus(),
   });
 
   // TODO extract to form change/submit debounce helper function
-  readonly searchChanges$ = toObservable<FormChange<TodoSearchFormValue>>(
+  readonly #searchChanges$ = toObservable<FormChange<TodoSearchFormValue>>(
     computed(() => ({
       type: 'CHANGE',
-      value: this.searchChanges(),
+      value: this.#searchChanges(),
     }))
   );
-  readonly searchSubmits$ = toObservable<FormSubmit<TodoSearchFormValue>>(
+  readonly #searchSubmits$ = toObservable<FormSubmit<TodoSearchFormValue>>(
     computed(() => {
       const submitted = this.searchSubmit();
       const undebounced: Partial<TodoSearchFormValue> = {
@@ -111,8 +111,8 @@ export class TodoComponent {
       };
     })
   );
-  readonly search = toSignal(
-    merge(this.searchChanges$, this.searchSubmits$).pipe(
+  readonly #search = toSignal(
+    merge(this.#searchChanges$, this.#searchSubmits$).pipe(
       debounce(({ type }) =>
         type === 'SUBMIT'
           ? of(true)
@@ -122,17 +122,17 @@ export class TodoComponent {
     )
   );
 
-  readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
-  readonly pageSize = signal(initialSearchTodoRequest.pageSize);
-  readonly paginator = viewChild.required(MatPaginator);
-  readonly page = toSignal(
-    toObservable(this.paginator).pipe(switchMap((paginator) => paginator.page))
+  protected readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
+  protected readonly pageSize = signal(initialSearchTodoRequest.pageSize);
+  readonly #paginator = viewChild.required(MatPaginator);
+  readonly #page = toSignal(
+    toObservable(this.#paginator).pipe(switchMap((paginator) => paginator.page))
   );
 
   // TODO reset pageIndex on non-page changes
-  readonly searchRequest = computed((): SearchTodoRequest => {
-    const { pageIndex, pageSize } = this.page() ?? initialSearchTodoRequest;
-    const search = this.search() ?? initialSearchTodoRequest;
+  readonly #searchRequest = computed((): SearchTodoRequest => {
+    const { pageIndex, pageSize } = this.#page() ?? initialSearchTodoRequest;
+    const search = this.#search() ?? initialSearchTodoRequest;
 
     return {
       ...search,
@@ -141,17 +141,17 @@ export class TodoComponent {
     };
   });
 
-  readonly searchState = serviceState(
-    this.searchRequest,
+  protected readonly searchState = serviceState(
+    this.#searchRequest,
     (searchRequest) => this.#todoService.search(searchRequest),
     emptySearchTodoResponse
   );
 
-  readonly todoTotalCount = computed(
+  protected readonly todoTotalCount = computed(
     () => this.searchState.response().totalCount
   );
-  readonly todos = computed(() => this.searchState.response().todos);
-  readonly hasNoResult = computed(
+  protected readonly todos = computed(() => this.searchState.response().todos);
+  protected readonly hasNoResult = computed(
     () =>
       this.searchState.serviceCall().type === 'SUCCESS' &&
       this.searchState.response().totalCount === 0
