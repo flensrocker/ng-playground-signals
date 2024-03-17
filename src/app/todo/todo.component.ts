@@ -8,7 +8,8 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { provideLocalStorageTodoService } from './todo-local-storage.service';
+import { provideLocalStorageTodoService } from '../todo-service';
+
 import { TodoStore } from './todo.store';
 import { TodoListComponent } from './todo-list.component';
 import { TodoAddComponent } from './todo-add.component';

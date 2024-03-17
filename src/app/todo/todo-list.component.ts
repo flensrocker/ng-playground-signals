@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { SearchTodoItem } from './todo.types';
+
+import { TodoEntity } from '../todo-service';
 
 @Component({
   selector: 'app-todo-list',
@@ -17,5 +18,5 @@ import { SearchTodoItem } from './todo.types';
   `,
 })
 export class TodoListComponent {
-  readonly todos = input.required<readonly SearchTodoItem[]>();
+  readonly todos = input.required<readonly TodoEntity[]>();
 }

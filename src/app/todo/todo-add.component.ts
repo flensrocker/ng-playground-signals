@@ -19,8 +19,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 import { formStatus, formSubmit } from '../utils';
-
-import { AddTodoRequest } from './todo.types';
+import { AddTodoRequest } from '../todo-service';
 
 @Component({
   selector: 'app-todo-add',

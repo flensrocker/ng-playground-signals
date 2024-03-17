@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { TodoEntity } from './todo.types';
+
+import { TodoEntity } from '../todo-service';
+
 import { TodoListItemComponent } from './todo-list-item.component';
 
 @Component({

@@ -4,20 +4,20 @@ import {
   model,
   viewChild,
 } from '@angular/core';
+import { outputFromObservable } from '@angular/core/rxjs-interop';
+import { FormsModule, NgForm } from '@angular/forms';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
+import { formSubmit } from '../utils';
 import {
   SearchTodoRequest,
   initialSearchTodoRequest,
   todoStatusList,
-} from './todo.types';
-import { FormsModule, NgForm } from '@angular/forms';
-import { formSubmit } from '../utils';
-import { outputFromObservable } from '@angular/core/rxjs-interop';
+} from '../todo-service';
 
 export type TodoSearchFormValue = Omit<
   SearchTodoRequest,

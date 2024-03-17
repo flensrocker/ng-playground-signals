@@ -12,13 +12,6 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { catchError, map, of, pipe, switchMap, tap } from 'rxjs';
 
 import {
-  AddTodoRequest,
-  AddTodoResponse,
-  SearchTodoRequest,
-  SearchTodoResponse,
-  TodoService,
-} from './todo.types';
-import {
   NamedBusyState,
   clearBusy,
   setBusy,
@@ -28,6 +21,13 @@ import {
   setError,
   withError,
 } from '../utils';
+import {
+  AddTodoRequest,
+  AddTodoResponse,
+  SearchTodoRequest,
+  SearchTodoResponse,
+  TodoService,
+} from '../todo-service';
 
 export type TodoState = {
   readonly searchRequest: SearchTodoRequest;

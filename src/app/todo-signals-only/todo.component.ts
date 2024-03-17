@@ -15,14 +15,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { debounce, delay, map, merge, of, switchMap } from 'rxjs';
 
 import { FormChange, FormSubmit, serviceState } from '../utils';
-
 import {
   SearchTodoRequest,
   TodoService,
   emptySearchTodoResponse,
   initialSearchTodoRequest,
-} from './todo.types';
-import { provideLocalStorageTodoService } from './todo-local-storage.service';
+  provideLocalStorageTodoService,
+} from '../todo-service';
+
 import { TodoListComponent } from './todo-list.component';
 import {
   TodoSearchComponent,
