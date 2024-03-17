@@ -124,9 +124,9 @@ export class TodoComponent {
 
   protected readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
   protected readonly pageSize = signal(initialSearchTodoRequest.pageSize);
-  readonly #paginator = viewChild.required(MatPaginator);
+  protected readonly paginator = viewChild.required(MatPaginator);
   readonly #page = toSignal(
-    toObservable(this.#paginator).pipe(switchMap((paginator) => paginator.page))
+    toObservable(this.paginator).pipe(switchMap((paginator) => paginator.page))
   );
 
   // TODO reset pageIndex on non-page changes
