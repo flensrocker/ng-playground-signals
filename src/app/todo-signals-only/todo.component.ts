@@ -75,7 +75,7 @@ import {
     }
 
     <app-paginator
-      [pageSizeOptions]="[5, 10, 20, 50, 100]"
+      [pageSizeOptions]="pageSizeOptions()"
       [length]="todoTotalCount()"
       [(pageIndex)]="pageIndex"
       [(pageSize)]="pageSize"
@@ -89,15 +89,19 @@ export class TodoComponent {
   readonly #searchDebounceTime = 500;
   readonly #todoService = inject(TodoService);
 
-  protected readonly searchFilter = signal(initialSearchTodoRequest.filter);
-  protected readonly searchStatus = signal(initialSearchTodoRequest.status);
+  protected readonly pageSizeOptions = signal([5, 10, 20, 50, 100]);
   protected readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
   protected readonly pageSize = signal(initialSearchTodoRequest.pageSize);
 
-  readonly #searchChanges = computed<TodoSearchFormValue>(() => ({
-    filter: this.searchFilter(),
-    status: this.searchStatus(),
-  }));
+  readonly #page$ = toObservable(
+    computed(() => ({
+      pageIndex: this.pageIndex(),
+      pageSize: this.pageSize(),
+    }))
+  );
+
+  protected readonly searchFilter = signal(initialSearchTodoRequest.filter);
+  protected readonly searchStatus = signal(initialSearchTodoRequest.status);
   protected readonly searchSubmit = signal<TodoSearchFormValue>({
     filter: this.searchFilter(),
     status: this.searchStatus(),
@@ -107,7 +111,10 @@ export class TodoComponent {
   readonly #searchChanges$ = toObservable<FormChange<TodoSearchFormValue>>(
     computed(() => ({
       type: 'CHANGE',
-      value: this.#searchChanges(),
+      value: {
+        filter: this.searchFilter(),
+        status: this.searchStatus(),
+      },
     }))
   );
   readonly #searchSubmits$ = toObservable<FormSubmit<TodoSearchFormValue>>(
@@ -133,13 +140,6 @@ export class TodoComponent {
         : of(true).pipe(delay(this.#searchDebounceTime))
     ),
     map(({ value }) => value)
-  );
-
-  readonly #page$ = toObservable(
-    computed(() => ({
-      pageIndex: this.pageIndex(),
-      pageSize: this.pageSize(),
-    }))
   );
 
   readonly #searchRequest$ = combineLatest([this.#search$, this.#page$]).pipe(
