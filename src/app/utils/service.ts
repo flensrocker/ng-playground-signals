@@ -1,4 +1,4 @@
-import { Signal, computed } from '@angular/core';
+import { Signal, computed, isSignal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import {
@@ -56,23 +56,27 @@ export type ServiceState<TRequest, TResponse> = ServiceStateWithDefaultResponse<
 >;
 
 export function serviceState<TRequest, TResponse>(
-  serviceRequest: Signal<TRequest>,
+  serviceRequest: Signal<TRequest> | Observable<TRequest>,
   service: (request: TRequest) => Observable<TResponse>
 ): ServiceState<TRequest, TResponse>;
 
 export function serviceState<TRequest, TResponse>(
-  serviceRequest: Signal<TRequest>,
+  serviceRequest: Signal<TRequest> | Observable<TRequest>,
   service: (request: TRequest) => Observable<TResponse>,
   defaultResponse: TResponse
 ): ServiceStateWithDefaultResponse<TRequest, TResponse>;
 
 export function serviceState<TRequest, TResponse>(
-  serviceRequest: Signal<TRequest>,
+  serviceRequest: Signal<TRequest> | Observable<TRequest>,
   service: (request: TRequest) => Observable<TResponse>,
   defaultResponse?: TResponse
 ): ServiceState<TRequest, TResponse> {
+  const serviceRequest$ = isSignal(serviceRequest)
+    ? toObservable(serviceRequest)
+    : serviceRequest;
+
   const serviceCall = toSignal(
-    toObservable(serviceRequest).pipe(
+    serviceRequest$.pipe(
       switchMap(
         (request): Observable<ServiceCallState<TRequest, TResponse>> =>
           service(request).pipe(

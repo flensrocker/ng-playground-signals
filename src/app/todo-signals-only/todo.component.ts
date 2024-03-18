@@ -5,12 +5,21 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { debounce, delay, map, merge, of } from 'rxjs';
+import {
+  EMPTY,
+  combineLatest,
+  debounce,
+  delay,
+  map,
+  merge,
+  of,
+  switchScan,
+} from 'rxjs';
 
 import {
   FormChange,
@@ -30,7 +39,6 @@ import { TodoListComponent } from './todo-list.component';
 import {
   TodoSearchComponent,
   TodoSearchFormValue,
-  initialTodoSearchFormValue,
 } from './todo-search.component';
 
 @Component({
@@ -69,8 +77,8 @@ import {
     <app-paginator
       [pageSizeOptions]="[5, 10, 20, 50, 100]"
       [length]="todoTotalCount()"
-      [(pageIndex)]="searchPageIndex"
-      [(pageSize)]="searchPageSize"
+      [(pageIndex)]="pageIndex"
+      [(pageSize)]="pageSize"
     />
 
     <div>
@@ -81,8 +89,11 @@ export class TodoComponent {
   readonly #searchDebounceTime = 500;
   readonly #todoService = inject(TodoService);
 
-  protected readonly searchFilter = signal(initialTodoSearchFormValue.filter);
-  protected readonly searchStatus = signal(initialTodoSearchFormValue.status);
+  protected readonly searchFilter = signal(initialSearchTodoRequest.filter);
+  protected readonly searchStatus = signal(initialSearchTodoRequest.status);
+  protected readonly pageIndex = signal(initialSearchTodoRequest.pageIndex);
+  protected readonly pageSize = signal(initialSearchTodoRequest.pageSize);
+
   readonly #searchChanges = computed<TodoSearchFormValue>(() => ({
     filter: this.searchFilter(),
     status: this.searchStatus(),
@@ -115,38 +126,47 @@ export class TodoComponent {
       };
     })
   );
-  readonly #search = toSignal(
-    merge(this.#searchChanges$, this.#searchSubmits$).pipe(
-      debounce(({ type }) =>
-        type === 'SUBMIT'
-          ? of(true)
-          : of(true).pipe(delay(this.#searchDebounceTime))
-      ),
-      map(({ value }) => value)
+  readonly #search$ = merge(this.#searchChanges$, this.#searchSubmits$).pipe(
+    debounce(({ type }) =>
+      type === 'SUBMIT'
+        ? of(true)
+        : of(true).pipe(delay(this.#searchDebounceTime))
     ),
-    { initialValue: initialTodoSearchFormValue }
+    map(({ value }) => value)
   );
 
-  protected readonly searchPageIndex = signal(
-    initialSearchTodoRequest.pageIndex
+  readonly #page$ = toObservable(
+    computed(() => ({
+      pageIndex: this.pageIndex(),
+      pageSize: this.pageSize(),
+    }))
   );
-  protected readonly searchPageSize = signal(initialSearchTodoRequest.pageSize);
 
-  // TODO reset pageIndex on non-page changes
-  readonly #searchRequest = computed((): SearchTodoRequest => {
-    const search = this.#search();
-    const pageIndex = this.searchPageIndex();
-    const pageSize = this.searchPageSize();
+  readonly #searchRequest$ = combineLatest([this.#search$, this.#page$]).pipe(
+    map(([search, page]): SearchTodoRequest => {
+      return {
+        ...search,
+        ...page,
+      };
+    }),
+    // TODO extract "reset pageIndex" as helper function
+    switchScan((lastSearchRequest, searchRequest) => {
+      if (
+        lastSearchRequest != null &&
+        searchRequest.pageIndex > 0 &&
+        lastSearchRequest.pageIndex === searchRequest.pageIndex &&
+        lastSearchRequest.pageSize === searchRequest.pageSize
+      ) {
+        this.pageIndex.set(0);
+        return EMPTY;
+      }
 
-    return {
-      ...search,
-      pageIndex,
-      pageSize,
-    };
-  });
+      return of(searchRequest);
+    }, null as SearchTodoRequest | null)
+  );
 
   protected readonly searchState = serviceState(
-    this.#searchRequest,
+    this.#searchRequest$,
     (searchRequest) => this.#todoService.search(searchRequest),
     emptySearchTodoResponse
   );

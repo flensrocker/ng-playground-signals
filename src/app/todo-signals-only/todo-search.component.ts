@@ -24,11 +24,6 @@ export type TodoSearchFormValue = Omit<
   'pageIndex' | 'pageSize'
 >;
 
-export const initialTodoSearchFormValue: TodoSearchFormValue = {
-  filter: initialSearchTodoRequest.filter,
-  status: initialSearchTodoRequest.status,
-};
-
 @Component({
   selector: 'app-todo-search',
   standalone: true,
@@ -59,8 +54,8 @@ export const initialTodoSearchFormValue: TodoSearchFormValue = {
 export class TodoSearchComponent {
   protected readonly todoStatusList = todoStatusList;
 
-  readonly filter = model(initialTodoSearchFormValue.filter);
-  readonly status = model(initialTodoSearchFormValue.status);
+  readonly filter = model(initialSearchTodoRequest.filter);
+  readonly status = model(initialSearchTodoRequest.status);
 
   protected readonly form = viewChild.required<NgForm>('ngForm');
   readonly formSubmit = outputFromObservable(
