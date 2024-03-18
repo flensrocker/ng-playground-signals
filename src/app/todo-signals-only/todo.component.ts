@@ -4,17 +4,20 @@ import {
   computed,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { debounce, delay, map, merge, of, switchMap } from 'rxjs';
+import { debounce, delay, map, merge, of } from 'rxjs';
 
-import { FormChange, FormSubmit, serviceState } from '../utils';
+import {
+  FormChange,
+  FormSubmit,
+  PaginatorComponent,
+  serviceState,
+} from '../utils';
 import {
   SearchTodoRequest,
   TodoService,
@@ -30,21 +33,14 @@ import {
   initialTodoSearchFormValue,
 } from './todo-search.component';
 
-type TodoSearchPage = Pick<SearchTodoRequest, 'pageIndex' | 'pageSize'>;
-
-const initialTodoSearchPage: TodoSearchPage = {
-  pageIndex: initialSearchTodoRequest.pageIndex,
-  pageSize: initialSearchTodoRequest.pageSize,
-};
-
 @Component({
   selector: 'app-todo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatFormFieldModule,
-    MatPaginatorModule,
     MatProgressBarModule,
+    PaginatorComponent,
     TodoListComponent,
     TodoSearchComponent,
   ],
@@ -70,11 +66,11 @@ const initialTodoSearchPage: TodoSearchPage = {
     <app-todo-list [todos]="todos()" />
     }
 
-    <mat-paginator
+    <app-paginator
       [pageSizeOptions]="[5, 10, 20, 50, 100]"
       [length]="todoTotalCount()"
-      [pageIndex]="searchPageIndex()"
-      [pageSize]="searchPageSize()"
+      [(pageIndex)]="searchPageIndex"
+      [(pageSize)]="searchPageSize"
     />
 
     <div>
@@ -135,30 +131,17 @@ export class TodoComponent {
     initialSearchTodoRequest.pageIndex
   );
   protected readonly searchPageSize = signal(initialSearchTodoRequest.pageSize);
-  protected readonly paginator = viewChild.required(MatPaginator);
-  readonly #searchPage = toSignal(
-    toObservable(this.paginator).pipe(
-      switchMap((paginator) => paginator.page),
-      map(
-        (pageEvent): TodoSearchPage => ({
-          pageIndex: pageEvent.pageIndex,
-          pageSize: pageEvent.pageSize,
-        })
-      )
-    ),
-    {
-      initialValue: initialTodoSearchPage,
-    }
-  );
 
   // TODO reset pageIndex on non-page changes
   readonly #searchRequest = computed((): SearchTodoRequest => {
     const search = this.#search();
-    const page = this.#searchPage();
+    const pageIndex = this.searchPageIndex();
+    const pageSize = this.searchPageSize();
 
     return {
       ...search,
-      ...page,
+      pageIndex,
+      pageSize,
     };
   });
 
