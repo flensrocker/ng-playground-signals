@@ -2,6 +2,11 @@ import { Observable } from 'rxjs';
 
 export type TodoStatus = 'OPEN' | 'DONE' | 'DISMISSED';
 
+export const isTodoStatus = (
+  status: string | null | undefined
+): status is TodoStatus =>
+  status === 'OPEN' || status === 'DONE' || status === 'DISMISSED';
+
 export const todoStatusList: readonly {
   readonly value: TodoStatus;
   readonly label: string;
