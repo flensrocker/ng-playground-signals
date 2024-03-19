@@ -10,21 +10,11 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import {
-  EMPTY,
-  combineLatest,
-  debounce,
-  delay,
-  map,
-  merge,
-  of,
-  switchScan,
-} from 'rxjs';
+import { EMPTY, combineLatest, map, of, switchScan } from 'rxjs';
 
 import {
-  FormChange,
-  FormSubmit,
   PaginatorComponent,
+  formChangeSubmitDebounced,
   serviceState,
 } from '../utils';
 import {
@@ -58,7 +48,7 @@ import {
     <app-todo-search
       [(filter)]="searchFilter"
       [(status)]="searchStatus"
-      (formSubmit)="searchSubmit.set($event)"
+      (formSubmit)="searchSubmits.set($event)"
     />
 
     @if (searchState.isBusy()) {
@@ -102,44 +92,25 @@ export class TodoComponent {
 
   protected readonly searchFilter = signal(initialSearchTodoRequest.filter);
   protected readonly searchStatus = signal(initialSearchTodoRequest.status);
-  protected readonly searchSubmit = signal<TodoSearchFormValue>({
+  protected readonly searchSubmits = signal<TodoSearchFormValue>({
     filter: this.searchFilter(),
     status: this.searchStatus(),
   });
 
-  // TODO extract to form change/submit debounce helper function
-  readonly #searchChanges$ = toObservable<FormChange<TodoSearchFormValue>>(
-    computed(() => ({
-      type: 'CHANGE',
-      value: {
-        filter: this.searchFilter(),
-        status: this.searchStatus(),
-      },
-    }))
-  );
-  readonly #searchSubmits$ = toObservable<FormSubmit<TodoSearchFormValue>>(
-    computed(() => {
-      const submitted = this.searchSubmit();
-      const undebounced: Partial<TodoSearchFormValue> = {
-        status: this.searchStatus(),
-      };
-
-      return {
-        type: 'SUBMIT',
-        value: {
-          ...submitted,
-          ...undebounced,
-        },
-      };
+  readonly #searchChanges = computed<TodoSearchFormValue>(() => ({
+    filter: this.searchFilter(),
+    status: this.searchStatus(),
+  }));
+  readonly #searchChangesNotDebounced = computed<Partial<TodoSearchFormValue>>(
+    () => ({
+      status: this.searchStatus(),
     })
   );
-  readonly #search$ = merge(this.#searchChanges$, this.#searchSubmits$).pipe(
-    debounce(({ type }) =>
-      type === 'SUBMIT'
-        ? of(true)
-        : of(true).pipe(delay(this.#searchDebounceTime))
-    ),
-    map(({ value }) => value)
+  readonly #search$ = formChangeSubmitDebounced(
+    this.#searchDebounceTime,
+    this.searchSubmits,
+    this.#searchChanges,
+    this.#searchChangesNotDebounced
   );
 
   readonly #searchRequest$ = combineLatest([this.#search$, this.#page$]).pipe(

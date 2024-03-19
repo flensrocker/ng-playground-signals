@@ -1,4 +1,4 @@
-import { ElementRef, Signal } from '@angular/core';
+import { ElementRef, Signal, computed } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -7,7 +7,18 @@ import {
   NgForm,
 } from '@angular/forms';
 
-import { EMPTY, Observable, fromEvent, map, startWith, switchMap } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  debounce,
+  delay,
+  fromEvent,
+  map,
+  merge,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
 
 export type FormChange<TFormValue> = {
   readonly type: 'CHANGE';
@@ -20,6 +31,43 @@ export type FormSubmit<TFormValue> = {
 export type FormChangeSubmit<TFormValue> =
   | FormChange<TFormValue>
   | FormSubmit<TFormValue>;
+
+export function formChangeSubmitDebounced<TFormValue>(
+  debounceTime: number,
+  formSubmits: Signal<TFormValue>,
+  formChanges: Signal<TFormValue>,
+  formChangesNotDebounced?: Signal<Partial<TFormValue>>
+): Observable<TFormValue> {
+  const formChanges$ = toObservable<FormChange<TFormValue>>(
+    computed(() => ({
+      type: 'CHANGE',
+      value: formChanges(),
+    }))
+  );
+  const formSubmits$ = toObservable<FormSubmit<TFormValue>>(
+    computed(() => {
+      let value = formSubmits();
+      if (formChangesNotDebounced != null) {
+        value = {
+          ...value,
+          ...formChangesNotDebounced(),
+        };
+      }
+
+      return {
+        type: 'SUBMIT',
+        value,
+      };
+    })
+  );
+
+  return merge(formChanges$, formSubmits$).pipe(
+    debounce(({ type }) =>
+      type === 'SUBMIT' ? of(true) : of(true).pipe(delay(debounceTime))
+    ),
+    map(({ value }) => value)
+  );
+}
 
 export const formSubmit = <TFormValue>(
   ngForm$: Signal<NgForm | FormGroupDirective | undefined>
