@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   model,
+  signal,
   viewChild,
 } from '@angular/core';
 import { outputFromObservable } from '@angular/core/rxjs-interop';
@@ -44,7 +45,7 @@ export type TodoSearchFormValue = Omit<
       <mat-label>Status</mat-label>
       <mat-select name="status" placeholder="all" [(ngModel)]="status">
         <mat-option [value]="null">all</mat-option>
-        @for (option of todoStatusList; track option.value) {
+        @for (option of todoStatusList(); track option.value) {
         <mat-option [value]="option.value">{{ option.label }}</mat-option>
         }
       </mat-select>
@@ -52,7 +53,7 @@ export type TodoSearchFormValue = Omit<
   </form>`,
 })
 export class TodoSearchComponent {
-  protected readonly todoStatusList = todoStatusList;
+  protected readonly todoStatusList = signal(todoStatusList);
 
   readonly filter = model(initialSearchTodoRequest.filter);
   readonly status = model(initialSearchTodoRequest.status);
