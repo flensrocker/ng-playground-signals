@@ -10,11 +10,12 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { EMPTY, combineLatest, map, of, switchScan } from 'rxjs';
+import { combineLatest, map } from 'rxjs';
 
 import {
   PaginatorComponent,
   formChangeSubmitDebounced,
+  resetPageIndex,
   serviceState,
 } from '../utils';
 import {
@@ -114,26 +115,13 @@ export class TodoComponent {
   );
 
   readonly #searchRequest$ = combineLatest([this.#search$, this.#page$]).pipe(
-    map(([search, page]): SearchTodoRequest => {
-      return {
+    map(
+      ([search, page]): SearchTodoRequest => ({
         ...search,
         ...page,
-      };
-    }),
-    // TODO extract "reset pageIndex" as helper function
-    switchScan((lastSearchRequest, searchRequest) => {
-      if (
-        lastSearchRequest != null &&
-        searchRequest.pageIndex > 0 &&
-        lastSearchRequest.pageIndex === searchRequest.pageIndex &&
-        lastSearchRequest.pageSize === searchRequest.pageSize
-      ) {
-        this.pageIndex.set(0);
-        return EMPTY;
-      }
-
-      return of(searchRequest);
-    }, null as SearchTodoRequest | null)
+      })
+    ),
+    resetPageIndex(this.pageIndex)
   );
 
   protected readonly searchState = serviceState(
