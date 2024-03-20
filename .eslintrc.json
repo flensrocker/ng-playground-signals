@@ -19,7 +19,7 @@
           "error",
           {
             "type": "attribute",
-            "prefix": "app",
+            "prefix": ["app", "sig"],
             "style": "camelCase"
           }
         ],
