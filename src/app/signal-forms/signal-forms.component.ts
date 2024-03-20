@@ -41,17 +41,18 @@ export const signalFormControl = <T extends NonNullable<unknown> | null>(
   };
 };
 
-const setValueFromInputToControl = <T>(
-  $control: Signal<SignalFormControl<T>>,
-  inputElement: HTMLInputElement,
-  getInputValue: (input: HTMLInputElement) => T
+const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
+  $control: Signal<SignalFormControl<TValue>>,
+  element: TElement,
+  eventName: string,
+  getElementValue: (input: TElement) => TValue
 ): Subscription => {
   return toObservable($control)
     .pipe(
       switchMap((control) =>
-        fromEvent(inputElement, 'input').pipe(
+        fromEvent(element, eventName).pipe(
           switchMap(() => {
-            const value = getInputValue(inputElement);
+            const value = getElementValue(element);
             return of({ control, value });
           })
         )
@@ -65,32 +66,54 @@ const setValueFromInputToControl = <T>(
     });
 };
 
+@Directive()
+export abstract class SignalFormControlDirective<
+  TValue,
+  TElement extends HTMLElement
+> {
+  readonly control = input.required<SignalFormControl<TValue>>({
+    alias: 'sigControl',
+  });
+
+  protected readonly elementRef = inject<ElementRef<TElement>>(ElementRef);
+
+  constructor(
+    eventName: string,
+    getElementValue: (input: TElement) => TValue,
+    setElementValue: (input: TElement, value: TValue) => void
+  ) {
+    setValueFromElementToControl(
+      this.control,
+      this.elementRef.nativeElement,
+      eventName,
+      (element) => getElementValue(element)
+    );
+
+    effect(() => {
+      const value = this.control().value();
+      const inputValue = getElementValue(this.elementRef.nativeElement);
+      if (value !== inputValue) {
+        setElementValue(this.elementRef.nativeElement, value);
+      }
+    });
+  }
+}
+
 @Directive({
   selector: 'input[type=text][sigControl]',
   exportAs: 'sigControl',
   standalone: true,
 })
-export class StringSignalFormControlDirective {
-  readonly control = input.required<SignalFormControl<string>>({
-    alias: 'sigControl',
-  });
-
-  readonly #elementRef = inject<ElementRef<HTMLInputElement>>(ElementRef);
-
-  readonly #inputSubscription = setValueFromInputToControl(
-    this.control,
-    this.#elementRef.nativeElement,
-    (input) => input.value
-  );
-
+export class StringSignalFormControlDirective extends SignalFormControlDirective<
+  string,
+  HTMLInputElement
+> {
   constructor() {
-    effect(() => {
-      const value = this.control().value();
-      const inputValue = this.#elementRef.nativeElement.value;
-      if (value !== inputValue) {
-        this.#elementRef.nativeElement.value = value;
-      }
-    });
+    super(
+      'input',
+      (element) => element.value,
+      (element, value) => (element.value = value)
+    );
   }
 }
 
@@ -103,29 +126,16 @@ const normalizeNumber = (number: number): number => {
   exportAs: 'sigControl',
   standalone: true,
 })
-export class NumberSignalFormControlDirective {
-  readonly control = input.required<SignalFormControl<number>>({
-    alias: 'sigControl',
-  });
-
-  readonly #elementRef = inject<ElementRef<HTMLInputElement>>(ElementRef);
-
-  readonly #inputSubscription = setValueFromInputToControl(
-    this.control,
-    this.#elementRef.nativeElement,
-    (input) => normalizeNumber(input.valueAsNumber)
-  );
-
+export class NumberSignalFormControlDirective extends SignalFormControlDirective<
+  number,
+  HTMLInputElement
+> {
   constructor() {
-    effect(() => {
-      const value = normalizeNumber(this.control().value());
-      const inputValue = normalizeNumber(
-        this.#elementRef.nativeElement.valueAsNumber
-      );
-      if (value !== inputValue) {
-        this.#elementRef.nativeElement.valueAsNumber = value;
-      }
-    });
+    super(
+      'input',
+      (element) => normalizeNumber(element.valueAsNumber),
+      (element, value) => (element.valueAsNumber = value)
+    );
   }
 }
 
