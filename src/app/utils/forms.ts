@@ -10,6 +10,7 @@ import {
 import {
   EMPTY,
   Observable,
+  combineLatest,
   debounce,
   delay,
   fromEvent,
@@ -34,25 +35,28 @@ export type FormChangeSubmit<TFormValue> =
 
 export function formChangeSubmitDebounced<TFormValue>(
   debounceTime: number,
-  formSubmits: Signal<TFormValue>,
+  formSubmits$: Observable<TFormValue>,
   formChanges: Signal<TFormValue>,
   formChangesNotDebounced?: Signal<Partial<TFormValue>>
 ): Observable<TFormValue> {
-  const formChanges$ = toObservable<FormChange<TFormValue>>(
+  const changes$ = toObservable<FormChange<TFormValue>>(
     computed(() => ({
       type: 'CHANGE',
       value: formChanges(),
     }))
   );
-  const formSubmits$ = toObservable<FormSubmit<TFormValue>>(
-    computed(() => {
-      let value = formSubmits();
-      if (formChangesNotDebounced != null) {
-        value = {
-          ...value,
-          ...formChangesNotDebounced(),
-        };
-      }
+
+  const changesNotDebounced$ =
+    formChangesNotDebounced == null
+      ? EMPTY
+      : toObservable(formChangesNotDebounced);
+
+  const submits$ = combineLatest([formSubmits$, changesNotDebounced$]).pipe(
+    map(([submittedValue, changedValue]) => {
+      const value: TFormValue = {
+        ...submittedValue,
+        ...changedValue,
+      };
 
       return {
         type: 'SUBMIT',
@@ -61,7 +65,7 @@ export function formChangeSubmitDebounced<TFormValue>(
     })
   );
 
-  return merge(formChanges$, formSubmits$).pipe(
+  return merge(changes$, submits$).pipe(
     debounce(({ type }) =>
       type === 'SUBMIT' ? of(true) : of(true).pipe(delay(debounceTime))
     ),

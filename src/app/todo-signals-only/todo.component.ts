@@ -4,16 +4,18 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { outputToObservable, toObservable } from '@angular/core/rxjs-interop';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { combineLatest, map } from 'rxjs';
+import { combineLatest, map, switchMap } from 'rxjs';
 
 import {
   PaginatorComponent,
+  filterNotNull,
   formChangeSubmitDebounced,
   resetPageIndex,
   serviceState,
@@ -46,11 +48,7 @@ import {
   providers: [provideLocalStorageTodoService()],
   template: `<h1>TODO with Signals</h1>
 
-    <app-todo-search
-      [(filter)]="searchFilter"
-      [(status)]="searchStatus"
-      (formSubmit)="searchSubmits.set($event)"
-    />
+    <app-todo-search [(filter)]="searchFilter" [(status)]="searchStatus" />
 
     @if (searchState.isBusy()) {
     <mat-progress-bar mode="indeterminate" />
@@ -77,7 +75,6 @@ import {
     </div>`,
 })
 export class TodoComponent {
-  readonly #searchDebounceTime = 500;
   readonly #todoService = inject(TodoService);
 
   protected readonly pageSizeOptions = signal([5, 10, 20, 50, 100]);
@@ -93,10 +90,6 @@ export class TodoComponent {
 
   protected readonly searchFilter = signal(initialSearchTodoRequest.filter);
   protected readonly searchStatus = signal(initialSearchTodoRequest.status);
-  protected readonly searchSubmits = signal<TodoSearchFormValue>({
-    filter: this.searchFilter(),
-    status: this.searchStatus(),
-  });
 
   readonly #searchChanges = computed<TodoSearchFormValue>(() => ({
     filter: this.searchFilter(),
@@ -107,9 +100,18 @@ export class TodoComponent {
       status: this.searchStatus(),
     })
   );
+
+  protected readonly searchCmp = viewChild(TodoSearchComponent);
+  readonly #searchSubmits$ = toObservable(this.searchCmp).pipe(
+    filterNotNull(),
+    switchMap((cmp) => outputToObservable(cmp.formSubmit))
+  );
+
+  readonly #searchDebounceTime = 500;
+
   readonly #search$ = formChangeSubmitDebounced(
     this.#searchDebounceTime,
-    this.searchSubmits,
+    this.#searchSubmits$,
     this.#searchChanges,
     this.#searchChangesNotDebounced
   );
