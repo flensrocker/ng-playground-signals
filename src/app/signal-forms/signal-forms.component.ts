@@ -13,12 +13,70 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Subscription, fromEvent, of, switchMap } from 'rxjs';
 
-export type SignalFormControl<T> = {
+export type SignalFormBase<T> = {
+  parent?: SignalFormBase<unknown>;
   readonly initialValue: Signal<T>;
   readonly value: Signal<T>;
   readonly dirty: Signal<boolean>;
+};
+
+export type SignalFormGroup<T extends Record<string, SignalFormBase<unknown>>> =
+  SignalFormBase<T> & {
+    readonly controls: { readonly [C in keyof T]: T[C] };
+  };
+
+export type SignalFormControl<T> = SignalFormBase<T> & {
   readonly setValue: (value: T) => void;
   readonly reset: (initialValue?: T) => void;
+};
+
+export const signalFormGroup = <
+  T extends Record<string, SignalFormBase<unknown>>
+>(
+  controls: T
+): SignalFormGroup<T> => {
+  const initialValue = computed(() => {
+    return Object.keys(controls).reduce(
+      (val, ctrlName) => ({
+        ...val,
+        [ctrlName]: controls[ctrlName].initialValue(),
+      }),
+      {} as {
+        readonly [C in keyof T]: T[C]['initialValue'] extends Signal<infer V>
+          ? V
+          : never;
+      }
+    );
+  });
+  const value = computed(() => {
+    return Object.keys(controls).reduce(
+      (val, ctrlName) => ({ ...val, [ctrlName]: controls[ctrlName].value() }),
+      {} as {
+        readonly [C in keyof T]: T[C]['value'] extends Signal<infer V>
+          ? V
+          : never;
+      }
+    );
+  });
+  const dirty = computed(() => {
+    return Object.keys(controls).reduce(
+      (isDirty, ctrlName) => isDirty || controls[ctrlName].dirty(),
+      false
+    );
+  });
+
+  const formGroup = {
+    controls,
+    initialValue,
+    value,
+    dirty,
+  } as SignalFormGroup<T>;
+
+  Object.keys(controls).forEach((ctrlName) => {
+    controls[ctrlName].parent = formGroup;
+  });
+
+  return formGroup;
 };
 
 export const signalFormControl = <T extends NonNullable<unknown> | null>(
@@ -152,8 +210,8 @@ export const SignalFormsModule = [
   template: `<h1>Signal-Forms</h1>
 
     <form>
-      <input type="text" [sfControl]="text" />
-      <input type="number" [sfControl]="number" />
+      <input type="text" [sfControl]="form.controls.text" />
+      <input type="number" [sfControl]="form.controls.number" />
       <div>
         <button type="submit">submit</button>
         <button type="reset">reset</button>
@@ -163,21 +221,16 @@ export const SignalFormsModule = [
     <pre>{{ debug() }}</pre>`,
 })
 export class SignalFormsComponent {
-  protected readonly text = signalFormControl<string>('');
-  protected readonly number = signalFormControl<number>(0);
+  protected readonly form = signalFormGroup({
+    text: signalFormControl<string>('Init!'),
+    number: signalFormControl<number>(1),
+  });
 
   protected readonly debug = computed(() => {
     const data = {
-      text: {
-        initialValue: this.text.initialValue(),
-        value: this.text.value(),
-        dirty: this.text.dirty(),
-      },
-      number: {
-        initialValue: this.number.initialValue(),
-        value: this.number.value(),
-        dirty: this.number.dirty(),
-      },
+      initialValue: this.form.initialValue(),
+      value: this.form.value(),
+      dirty: this.form.dirty(),
     };
 
     return JSON.stringify(data);
