@@ -72,7 +72,7 @@ export abstract class SignalFormControlDirective<
   TElement extends HTMLElement
 > {
   readonly control = input.required<SignalFormControl<TValue>>({
-    alias: 'sigControl',
+    alias: 'sfControl',
   });
 
   protected readonly elementRef = inject<ElementRef<TElement>>(ElementRef);
@@ -100,8 +100,8 @@ export abstract class SignalFormControlDirective<
 }
 
 @Directive({
-  selector: 'input[type=text][sigControl]',
-  exportAs: 'sigControl',
+  selector: 'input[type=text][sfControl]',
+  exportAs: 'sfControl',
   standalone: true,
 })
 export class StringSignalFormControlDirective extends SignalFormControlDirective<
@@ -122,8 +122,8 @@ const normalizeNumber = (number: number): number => {
 };
 
 @Directive({
-  selector: 'input[type=number][sigControl]',
-  exportAs: 'sigControl',
+  selector: 'input[type=number][sfControl]',
+  exportAs: 'sfControl',
   standalone: true,
 })
 export class NumberSignalFormControlDirective extends SignalFormControlDirective<
@@ -152,8 +152,8 @@ export const SignalFormsModule = [
   template: `<h1>Signal-Forms</h1>
 
     <form>
-      <input type="text" [sigControl]="text" />
-      <input type="number" [sigControl]="number" />
+      <input type="text" [sfControl]="text" />
+      <input type="number" [sfControl]="number" />
       <div>
         <button type="submit">submit</button>
         <button type="reset">reset</button>
