@@ -14,13 +14,39 @@ import {
   template: `<h1>Signal-Forms</h1>
 
     <form>
-      <input type="text" [sfControl]="form.controls.text" />
-      <input type="number" [sfControl]="form.controls.number" />
+      <label for="text">Text</label>
+      <input type="text" name="text" [sfControl]="form.controls.text" />
+      <br />
+      <label for="number">Number</label>
+      <input type="number" name="number" [sfControl]="form.controls.number" />
+
+      <fieldset>
+        <legend>Address</legend>
+
+        <label for="street">Street</label>
+        <input
+          type="text"
+          name="street"
+          [sfControl]="form.controls.address.controls.street"
+        />
+        <br />
+        <label for="city">City</label>
+        <input
+          type="text"
+          name="city"
+          [sfControl]="form.controls.address.controls.city"
+        />
+      </fieldset>
+
       <div>
         <button type="submit">submit</button>
         <button type="reset">reset</button>
       </div>
     </form>
+
+    <div>
+      <button type="button" (click)="setFormValue()">set value</button>
+    </div>
 
     <pre>{{ debug() }}</pre>`,
 })
@@ -28,15 +54,36 @@ export class SignalFormsExampleComponent {
   protected readonly form = signalFormGroup({
     text: signalFormControl<string>('Init!'),
     number: signalFormControl<number>(1),
+    address: signalFormGroup({
+      street: signalFormControl<string>(''),
+      city: signalFormControl<string>(''),
+    }),
   });
 
   protected readonly debug = computed(() => {
+    const address = {
+      initialValue: this.form.controls.address.initialValue(),
+      value: this.form.controls.address.value(),
+      dirty: this.form.controls.address.dirty(),
+    };
     const data = {
       initialValue: this.form.initialValue(),
       value: this.form.value(),
       dirty: this.form.dirty(),
+      address,
     };
 
-    return JSON.stringify(data);
+    return JSON.stringify(data, undefined, '  ');
   });
+
+  setFormValue() {
+    this.form.setValue({
+      text: 'Set Text!',
+      number: 2,
+      address: {
+        street: 'Set Street!',
+        city: 'Set City!',
+      },
+    });
+  }
 }
