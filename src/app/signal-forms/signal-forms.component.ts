@@ -61,7 +61,7 @@ export const signalFormGroup = <
 >(
   controls: T
 ): SignalFormGroup<T> => {
-  const initialValue = computed(() => {
+  const $initialValue = computed(() => {
     return Object.keys(controls).reduce(
       (val, ctrlName) => ({
         ...val,
@@ -70,13 +70,13 @@ export const signalFormGroup = <
       {} as InnerSignalFormGroupValue<T>
     );
   });
-  const value = computed(() => {
+  const $value = computed(() => {
     return Object.keys(controls).reduce(
       (val, ctrlName) => ({ ...val, [ctrlName]: controls[ctrlName].value() }),
       {} as InnerSignalFormGroupValue<T>
     );
   });
-  const dirty = computed(() => {
+  const $dirty = computed(() => {
     return Object.keys(controls).reduce(
       (isDirty, ctrlName) => isDirty || controls[ctrlName].dirty(),
       false
@@ -85,9 +85,9 @@ export const signalFormGroup = <
 
   const formGroup: SignalFormGroup<T> = {
     controls,
-    initialValue,
-    value,
-    dirty,
+    initialValue: $initialValue,
+    value: $value,
+    dirty: $dirty,
   };
 
   Object.keys(controls).forEach((ctrlName) => {
@@ -102,18 +102,22 @@ export const signalFormControl = <T extends NonNullable<unknown> | null>(
 ): SignalFormControl<T> => {
   const $initialValue = signal(initialValue);
   const $value = signal(initialValue);
+  const $dirty = computed(() => $initialValue() !== $value());
+
+  const setValue = (value: T) => $value.set(value);
+  const reset = (initialValue?: T) => {
+    if (initialValue !== undefined) {
+      $initialValue.set(initialValue);
+    }
+    $value.set($initialValue());
+  };
 
   return {
     initialValue: $initialValue.asReadonly(),
     value: $value.asReadonly(),
-    dirty: computed(() => $initialValue() !== $value()),
-    setValue: (value: T) => $value.set(value),
-    reset: (initialValue?: T) => {
-      if (initialValue !== undefined) {
-        $initialValue.set(initialValue);
-      }
-      $value.set($initialValue());
-    },
+    dirty: $dirty,
+    setValue,
+    reset,
   };
 };
 
