@@ -13,22 +13,48 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Subscription, fromEvent, of, switchMap } from 'rxjs';
 
+type Mutable<T> = T extends object
+  ? {
+      -readonly [K in keyof T]: Mutable<T[K]>;
+    }
+  : T;
+
 export type SignalFormBase<T> = {
-  parent?: SignalFormBase<unknown>;
+  readonly parent?: SignalFormBase<unknown>;
   readonly initialValue: Signal<T>;
   readonly value: Signal<T>;
   readonly dirty: Signal<boolean>;
 };
 
+export type SignalFormBaseValue<T> = T extends SignalFormBase<infer S>
+  ? S
+  : never;
+
+type InnerSignalFormGroupValue<T> = T extends Record<
+  string,
+  SignalFormBase<unknown>
+>
+  ? {
+      readonly [K in keyof T]: SignalFormBaseValue<T[K]>;
+    }
+  : never;
+
 export type SignalFormGroup<T extends Record<string, SignalFormBase<unknown>>> =
-  SignalFormBase<T> & {
+  SignalFormBase<InnerSignalFormGroupValue<T>> & {
     readonly controls: { readonly [C in keyof T]: T[C] };
   };
+
+export type SignalFormGroupValue<T> = T extends SignalFormGroup<infer V>
+  ? InnerSignalFormGroupValue<V>
+  : never;
 
 export type SignalFormControl<T> = SignalFormBase<T> & {
   readonly setValue: (value: T) => void;
   readonly reset: (initialValue?: T) => void;
 };
+
+export type SignalFormControlValue<T extends SignalFormControl<unknown>> =
+  SignalFormBaseValue<T>;
 
 export const signalFormGroup = <
   T extends Record<string, SignalFormBase<unknown>>
@@ -41,21 +67,13 @@ export const signalFormGroup = <
         ...val,
         [ctrlName]: controls[ctrlName].initialValue(),
       }),
-      {} as {
-        readonly [C in keyof T]: T[C]['initialValue'] extends Signal<infer V>
-          ? V
-          : never;
-      }
+      {} as InnerSignalFormGroupValue<T>
     );
   });
   const value = computed(() => {
     return Object.keys(controls).reduce(
       (val, ctrlName) => ({ ...val, [ctrlName]: controls[ctrlName].value() }),
-      {} as {
-        readonly [C in keyof T]: T[C]['value'] extends Signal<infer V>
-          ? V
-          : never;
-      }
+      {} as InnerSignalFormGroupValue<T>
     );
   });
   const dirty = computed(() => {
@@ -65,15 +83,15 @@ export const signalFormGroup = <
     );
   });
 
-  const formGroup = {
+  const formGroup: SignalFormGroup<T> = {
     controls,
     initialValue,
     value,
     dirty,
-  } as SignalFormGroup<T>;
+  };
 
   Object.keys(controls).forEach((ctrlName) => {
-    controls[ctrlName].parent = formGroup;
+    (controls[ctrlName] as Mutable<SignalFormBase<unknown>>).parent = formGroup;
   });
 
   return formGroup;
