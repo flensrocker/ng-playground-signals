@@ -18,6 +18,7 @@ export type SignalFormBase<T> = {
   readonly value: Signal<T>;
   readonly dirty: Signal<boolean>;
   readonly setValue: (value: T) => void;
+  readonly reset: (initialValue?: T) => void;
 };
 
 export type SignalFormBaseValue<T extends SignalFormBase<SignalFormAny>> =
@@ -45,7 +46,6 @@ export type SignalFormGroupValue<T extends SignalFormGroup<SignalFormAny>> =
 
 export type SignalFormControl<T> = SignalFormBase<T> & {
   readonly [SIGNAL_FORM_CONTROL]: true;
-  readonly reset: (initialValue?: T) => void;
 };
 
 export type SignalFormControlValue<T extends SignalFormControl<SignalFormAny>> =
@@ -77,10 +77,17 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
   });
 
   const setValue = (value: InnerSignalFormGroupValue<T>) => {
-    Object.keys(value).forEach((prop) => {
-      if (prop in controls) {
-        controls[prop].setValue(value[prop]);
-      }
+    Object.keys(controls).forEach((prop) => {
+      controls[prop].setValue(value[prop]);
+    });
+  };
+  const reset = (initialValue?: InnerSignalFormGroupValue<T>) => {
+    Object.keys(controls).forEach((prop) => {
+      controls[prop].reset(
+        initialValue != null && prop in initialValue
+          ? initialValue[prop]
+          : undefined
+      );
     });
   };
 
@@ -91,6 +98,7 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
     value: $value,
     dirty: $dirty,
     setValue,
+    reset,
   };
 
   Object.keys(controls).forEach((ctrlName) => {

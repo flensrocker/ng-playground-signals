@@ -39,8 +39,10 @@ import {
       </fieldset>
 
       <div>
-        <button type="submit">submit</button>
-        <button type="reset">reset</button>
+        <!-- TODO add reactive submit -->
+        <button type="submit" (click)="submitFormValue($event)">submit</button>
+        <!-- TODO add reactive reset -->
+        <button type="reset" (click)="resetFormValue($event)">reset</button>
       </div>
     </form>
 
@@ -85,5 +87,17 @@ export class SignalFormsExampleComponent {
         city: 'Set City!',
       },
     });
+  }
+
+  resetFormValue(event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+    this.form.reset();
+  }
+
+  submitFormValue(event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+    console.log('submit', this.form.value());
   }
 }
