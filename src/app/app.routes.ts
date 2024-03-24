@@ -2,8 +2,11 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
-    path: 'signal-forms',
-    loadChildren: () => import('./signal-forms').then((m) => m.SIGNAL_FORMS_ROUTES),
+    path: 'signal-forms-example',
+    loadChildren: () =>
+      import('./signal-forms-example').then(
+        (m) => m.SIGNAL_FORMS_EXAMPLE_ROUTES
+      ),
   },
   {
     path: 'todo',

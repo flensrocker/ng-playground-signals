@@ -1,1 +1,2 @@
-export * from './signal-forms.routes';
+export * from './signal-forms';
+export * from './signal-forms.directives';
