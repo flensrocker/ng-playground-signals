@@ -21,14 +21,14 @@ type InnerSignalFormGroupValue<T> = T extends Record<
   string,
   SignalFormBase<unknown>
 >
-  ? {
-      readonly [K in keyof T]: SignalFormBaseValue<T[K]>;
-    }
+  ? Readonly<{
+      [K in keyof T]: SignalFormBaseValue<T[K]>;
+    }>
   : never;
 
 export type SignalFormGroup<T extends Record<string, SignalFormBase<unknown>>> =
   SignalFormBase<InnerSignalFormGroupValue<T>> & {
-    readonly controls: { readonly [C in keyof T]: T[C] };
+    readonly controls: Readonly<{ [C in keyof T]: T[C] }>;
   };
 
 export type SignalFormGroupValue<T> = T extends SignalFormGroup<infer V>
