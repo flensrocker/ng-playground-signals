@@ -9,6 +9,9 @@ type Mutable<T> = T extends object
     }
   : T;
 
+export const SIGNAL_FORM_CONTROL = Symbol('SignalFormControl');
+export const SIGNAL_FORM_GROUP = Symbol('SignalFormGroup');
+
 export type SignalFormBase<T> = {
   readonly parent?: SignalFormBase<SignalFormAny>;
   readonly initialValue: Signal<T>;
@@ -33,6 +36,7 @@ type InnerSignalFormGroupValue<T> = T extends SignalFormGroupControls
 export type SignalFormGroup<T extends SignalFormGroupControls> = SignalFormBase<
   InnerSignalFormGroupValue<T>
 > & {
+  readonly [SIGNAL_FORM_GROUP]: true;
   readonly controls: T;
 };
 
@@ -40,6 +44,7 @@ export type SignalFormGroupValue<T extends SignalFormGroup<SignalFormAny>> =
   T extends SignalFormGroup<infer V> ? InnerSignalFormGroupValue<V> : never;
 
 export type SignalFormControl<T> = SignalFormBase<T> & {
+  readonly [SIGNAL_FORM_CONTROL]: true;
   readonly reset: (initialValue?: T) => void;
 };
 
@@ -80,6 +85,7 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
   };
 
   const formGroup: SignalFormGroup<T> = {
+    [SIGNAL_FORM_GROUP]: true,
     controls,
     initialValue: $initialValue,
     value: $value,
@@ -111,6 +117,7 @@ export const signalFormControl = <T extends NonNullable<SignalFormAny> | null>(
   };
 
   return {
+    [SIGNAL_FORM_CONTROL]: true,
     initialValue: $initialValue.asReadonly(),
     value: $value.asReadonly(),
     dirty: $dirty,
