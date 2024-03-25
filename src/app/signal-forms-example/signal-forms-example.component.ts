@@ -5,6 +5,10 @@ import {
   signalFormControl,
   signalFormGroup,
 } from '../signal-forms';
+import {
+  outputToObservable,
+  takeUntilDestroyed,
+} from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-signal-forms',
@@ -13,11 +17,7 @@ import {
   imports: [SignalFormsModule],
   template: `<h1>Signal-Forms</h1>
 
-    <form
-      [sfGroup]="this.form"
-      (sfReset)="resetFormValue()"
-      (sfSubmit)="submitFormValue()"
-    >
+    <form [sfGroup]="this.form">
       <label for="text">Text</label>
       <input type="text" name="text" [sfControl]="form.controls.text" />
       <br />
@@ -80,6 +80,22 @@ export class SignalFormsExampleComponent {
     return JSON.stringify(data, undefined, '  ');
   });
 
+  readonly #reset$ = outputToObservable(this.form.$reset)
+    .pipe(takeUntilDestroyed())
+    .subscribe({
+      next: () => {
+        console.log('reset');
+      },
+    });
+
+  readonly #submit$ = outputToObservable(this.form.$submit)
+    .pipe(takeUntilDestroyed())
+    .subscribe({
+      next: () => {
+        console.log('submit');
+      },
+    });
+
   setFormValue() {
     this.form.setValue({
       text: 'Set Text!',
@@ -89,13 +105,5 @@ export class SignalFormsExampleComponent {
         city: 'Set City!',
       },
     });
-  }
-
-  resetFormValue() {
-    console.log('reset');
-  }
-
-  submitFormValue() {
-    console.log('submit', this.form.value());
   }
 }

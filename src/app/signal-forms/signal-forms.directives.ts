@@ -7,7 +7,6 @@ import {
   forwardRef,
   inject,
   input,
-  output,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
@@ -55,16 +54,13 @@ const rootGroupDirectiveProvider: Provider = {
   providers: [rootGroupDirectiveProvider],
   // eslint-disable-next-line @angular-eslint/no-host-metadata-property
   host: {
-    '(reset)': 'this.sfReset.emit() || false',
-    '(submit)': 'this.sfSubmit.emit() || false',
+    '(reset)': 'this.group().$reset.emit() || false',
+    '(submit)': 'this.group().$submit.emit() || false',
   },
 })
 export class SignalFormRootGroupDirective<
   TControls extends SignalFormGroupControls
-> extends SignalFormGroupBaseDirective<TControls> {
-  readonly sfReset = output();
-  readonly sfSubmit = output();
-}
+> extends SignalFormGroupBaseDirective<TControls> {}
 
 const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
   $control: Signal<SignalFormControl<TValue>>,
