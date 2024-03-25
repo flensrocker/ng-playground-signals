@@ -13,7 +13,11 @@ import {
   imports: [SignalFormsModule],
   template: `<h1>Signal-Forms</h1>
 
-    <form [sfGroup]="this.form">
+    <form
+      [sfGroup]="this.form"
+      (sfReset)="resetFormValue()"
+      (sfSubmit)="submitFormValue()"
+    >
       <label for="text">Text</label>
       <input type="text" name="text" [sfControl]="form.controls.text" />
       <br />
@@ -39,10 +43,8 @@ import {
       </fieldset>
 
       <div>
-        <!-- TODO add reactive submit -->
-        <button type="submit" (click)="submitFormValue($event)">submit</button>
-        <!-- TODO add reactive reset -->
-        <button type="reset" (click)="resetFormValue($event)">reset</button>
+        <button type="submit">submit</button>
+        <button type="reset">reset</button>
       </div>
     </form>
 
@@ -89,15 +91,11 @@ export class SignalFormsExampleComponent {
     });
   }
 
-  resetFormValue(event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
-    this.form.reset();
+  resetFormValue() {
+    console.log('reset');
   }
 
-  submitFormValue(event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
+  submitFormValue() {
     console.log('submit', this.form.value());
   }
 }

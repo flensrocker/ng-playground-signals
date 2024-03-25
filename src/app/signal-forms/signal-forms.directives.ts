@@ -7,6 +7,7 @@ import {
   forwardRef,
   inject,
   input,
+  output,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
@@ -33,7 +34,7 @@ const groupDirectiveProvider: Provider = {
 };
 
 @Directive({
-  selector: '[sfGroup]',
+  selector: ':not(form)[sfGroup]',
   exportAs: 'sfGroup',
   standalone: true,
   providers: [groupDirectiveProvider],
@@ -41,6 +42,29 @@ const groupDirectiveProvider: Provider = {
 export class SignalFormGroupDirective<
   TControls extends SignalFormGroupControls
 > extends SignalFormGroupBaseDirective<TControls> {}
+
+const rootGroupDirectiveProvider: Provider = {
+  provide: SignalFormGroupBaseDirective,
+  useExisting: forwardRef(() => SignalFormRootGroupDirective),
+};
+
+@Directive({
+  selector: 'form[sfGroup]',
+  exportAs: 'sfGroup',
+  standalone: true,
+  providers: [rootGroupDirectiveProvider],
+  // eslint-disable-next-line @angular-eslint/no-host-metadata-property
+  host: {
+    '(reset)': 'this.sfReset.emit() || false',
+    '(submit)': 'this.sfSubmit.emit() || false',
+  },
+})
+export class SignalFormRootGroupDirective<
+  TControls extends SignalFormGroupControls
+> extends SignalFormGroupBaseDirective<TControls> {
+  readonly sfReset = output();
+  readonly sfSubmit = output();
+}
 
 const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
   $control: Signal<SignalFormControl<TValue>>,
@@ -142,6 +166,7 @@ export class NumberSignalFormControlDirective extends SignalFormControlDirective
 
 export const SignalFormsModule = [
   SignalFormGroupDirective,
+  SignalFormRootGroupDirective,
   NumberSignalFormControlDirective,
   StringSignalFormControlDirective,
 ];
