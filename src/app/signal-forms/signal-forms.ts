@@ -24,7 +24,7 @@ export type SignalFormBase<T> = {
 export type SignalFormBaseValue<T extends SignalFormBase<SignalFormAny>> =
   T extends SignalFormBase<infer S> ? S : never;
 
-type SignalFormGroupControls = Readonly<
+export type SignalFormGroupControls = Readonly<
   Record<string, SignalFormBase<SignalFormAny>>
 >;
 

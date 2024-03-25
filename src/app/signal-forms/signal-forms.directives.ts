@@ -1,8 +1,10 @@
 import {
   Directive,
   ElementRef,
+  Provider,
   Signal,
   effect,
+  forwardRef,
   inject,
   input,
 } from '@angular/core';
@@ -10,7 +12,35 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 import { Subscription, fromEvent, of, switchMap } from 'rxjs';
 
-import { SignalFormControl } from './signal-forms';
+import {
+  SignalFormControl,
+  SignalFormGroup,
+  SignalFormGroupControls,
+} from './signal-forms';
+
+@Directive()
+export abstract class SignalFormGroupBaseDirective<
+  TControls extends SignalFormGroupControls
+> {
+  readonly group = input.required<SignalFormGroup<TControls>>({
+    alias: 'sfGroup',
+  });
+}
+
+const groupDirectiveProvider: Provider = {
+  provide: SignalFormGroupBaseDirective,
+  useExisting: forwardRef(() => SignalFormGroupDirective),
+};
+
+@Directive({
+  selector: '[sfGroup]',
+  exportAs: 'sfGroup',
+  standalone: true,
+  providers: [groupDirectiveProvider],
+})
+export class SignalFormGroupDirective<
+  TControls extends SignalFormGroupControls
+> extends SignalFormGroupBaseDirective<TControls> {}
 
 const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
   $control: Signal<SignalFormControl<TValue>>,
@@ -111,6 +141,7 @@ export class NumberSignalFormControlDirective extends SignalFormControlDirective
 }
 
 export const SignalFormsModule = [
+  SignalFormGroupDirective,
   NumberSignalFormControlDirective,
   StringSignalFormControlDirective,
 ];

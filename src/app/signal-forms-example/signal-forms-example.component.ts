@@ -13,14 +13,14 @@ import {
   imports: [SignalFormsModule],
   template: `<h1>Signal-Forms</h1>
 
-    <form>
+    <form [sfGroup]="this.form">
       <label for="text">Text</label>
       <input type="text" name="text" [sfControl]="form.controls.text" />
       <br />
       <label for="number">Number</label>
       <input type="number" name="number" [sfControl]="form.controls.number" />
 
-      <fieldset>
+      <fieldset [sfGroup]="this.form.controls.address">
         <legend>Address</legend>
 
         <label for="street">Street</label>
