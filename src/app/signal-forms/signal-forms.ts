@@ -1,4 +1,4 @@
-import { OutputRef, Signal, computed, output, signal } from '@angular/core';
+import { Signal, computed, signal } from '@angular/core';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SignalFormAny = any;
@@ -39,9 +39,6 @@ export type SignalFormGroup<T extends SignalFormGroupControls> = SignalFormBase<
 > & {
   readonly [SIGNAL_FORM_GROUP]: true;
   readonly controls: T;
-  // TODO only in root-formgroup
-  readonly $reset: OutputRef<void>;
-  readonly $submit: OutputRef<void>;
 };
 
 export type SignalFormGroupValue<T extends SignalFormGroup<SignalFormAny>> =
@@ -94,14 +91,9 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
     });
   };
 
-  const $reset = output();
-  const $submit = output();
-
   const formGroup: SignalFormGroup<T> = {
     [SIGNAL_FORM_GROUP]: true,
     controls,
-    $reset,
-    $submit,
     initialValue: $initialValue,
     value: $value,
     dirty: $dirty,

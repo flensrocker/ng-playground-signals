@@ -1,14 +1,36 @@
-import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  viewChild,
+} from '@angular/core';
+import {
+  outputToObservable,
+  takeUntilDestroyed,
+  toObservable,
+} from '@angular/core/rxjs-interop';
+
+import { switchMap } from 'rxjs';
 
 import {
+  SignalFormControl,
+  SignalFormGroup,
+  SignalFormRootGroupDirective,
   SignalFormsModule,
   signalFormControl,
   signalFormGroup,
 } from '../signal-forms';
-import {
-  outputToObservable,
-  takeUntilDestroyed,
-} from '@angular/core/rxjs-interop';
+
+type AddressForm = SignalFormGroup<{
+  readonly street: SignalFormControl<string>;
+  readonly city: SignalFormControl<string>;
+}>;
+
+type Form = SignalFormGroup<{
+  readonly text: SignalFormControl<string>;
+  readonly number: SignalFormControl<number>;
+  readonly address: AddressForm;
+}>;
 
 @Component({
   selector: 'app-signal-forms',
@@ -17,7 +39,7 @@ import {
   imports: [SignalFormsModule],
   template: `<h1>Signal-Forms</h1>
 
-    <form [sfGroup]="this.form">
+    <form #rootForm="sfGroup" [sfGroup]="this.form">
       <label for="text">Text</label>
       <input type="text" name="text" [sfControl]="form.controls.text" />
       <br />
@@ -55,7 +77,7 @@ import {
     <pre>{{ debug() }}</pre>`,
 })
 export class SignalFormsExampleComponent {
-  protected readonly form = signalFormGroup({
+  protected readonly form: Form = signalFormGroup({
     text: signalFormControl<string>('Init!'),
     number: signalFormControl<number>(1),
     address: signalFormGroup({
@@ -63,6 +85,34 @@ export class SignalFormsExampleComponent {
       city: signalFormControl<string>(''),
     }),
   });
+
+  protected readonly rootForm =
+    viewChild.required<SignalFormRootGroupDirective<Form['controls']>>(
+      'rootForm'
+    );
+
+  readonly #reset$ = toObservable(this.rootForm)
+    .pipe(
+      switchMap((rootForm) => outputToObservable(rootForm.sfReset)),
+      takeUntilDestroyed()
+    )
+    .subscribe({
+      next: (form) => {
+        console.log('reset', form.value());
+        form.reset();
+      },
+    });
+
+  readonly #submit$ = toObservable(this.rootForm)
+    .pipe(
+      switchMap((rootForm) => outputToObservable(rootForm.sfSubmit)),
+      takeUntilDestroyed()
+    )
+    .subscribe({
+      next: (form) => {
+        console.log('submit', form.value());
+      },
+    });
 
   protected readonly debug = computed(() => {
     const address = {
@@ -79,22 +129,6 @@ export class SignalFormsExampleComponent {
 
     return JSON.stringify(data, undefined, '  ');
   });
-
-  readonly #reset$ = outputToObservable(this.form.$reset)
-    .pipe(takeUntilDestroyed())
-    .subscribe({
-      next: () => {
-        console.log('reset');
-      },
-    });
-
-  readonly #submit$ = outputToObservable(this.form.$submit)
-    .pipe(takeUntilDestroyed())
-    .subscribe({
-      next: () => {
-        console.log('submit');
-      },
-    });
 
   setFormValue() {
     this.form.setValue({
