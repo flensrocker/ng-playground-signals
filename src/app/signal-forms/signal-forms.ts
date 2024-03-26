@@ -1,10 +1,4 @@
-import {
-  OutputRef,
-  Signal,
-  computed,
-  output,
-  signal,
-} from '@angular/core';
+import { OutputRef, Signal, computed, output, signal } from '@angular/core';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SignalFormAny = any;
