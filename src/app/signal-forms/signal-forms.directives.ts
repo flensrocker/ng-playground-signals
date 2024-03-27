@@ -4,6 +4,7 @@ import {
   InjectionToken,
   Provider,
   Signal,
+  computed,
   effect,
   forwardRef,
   inject,
@@ -109,7 +110,7 @@ export const SIGNAL_FORM_TEXT_ACCESSOR: Provider = {
 };
 
 @Directive({
-  selector: 'input[type=text][sfControl]',
+  selector: 'input[type=text][sfControl], input[type=text][sfControlName]',
   standalone: true,
   providers: [SIGNAL_FORM_TEXT_ACCESSOR],
 })
@@ -138,7 +139,7 @@ const normalizeNumber = (number: number): number => {
 };
 
 @Directive({
-  selector: 'input[type=number][sfControl]',
+  selector: 'input[type=number][sfControl], input[type=number][sfControlName]',
   standalone: true,
   providers: [SIGNAL_FORM_NUMBER_ACCESSOR],
 })
@@ -196,10 +197,62 @@ export class SignalFormControlDirective<TValue> {
   }
 }
 
+@Directive({
+  selector: '[sfControlName]',
+  exportAs: 'sfControlName',
+  standalone: true,
+})
+export class SignalFormControlNameDirective<TValue> {
+  readonly sfControlName = input.required<string>();
+
+  protected readonly parent = inject(SignalFormGroupBaseDirective, {
+    skipSelf: true,
+    host: true,
+  });
+  readonly #sfControl = computed(
+    () =>
+      this.parent.group().controls[
+        this.sfControlName()
+      ] as SignalFormControl<TValue>
+  );
+
+  protected readonly accessors = inject<
+    SignalFormAccessor<HTMLElement, TValue>[]
+  >(SIGNAL_FORM_ACCESSOR, {
+    optional: true,
+    self: true,
+  });
+  protected readonly elementRef = inject(ElementRef);
+
+  constructor() {
+    if (this.accessors != null && this.accessors.length > 0) {
+      const accessor = this.accessors[0];
+
+      setValueFromElementToControl(
+        this.#sfControl,
+        this.elementRef.nativeElement,
+        accessor.eventName,
+        (element) => accessor.getElementValue(element)
+      );
+
+      effect(() => {
+        const value = this.#sfControl().value();
+        const inputValue = accessor.getElementValue(
+          this.elementRef.nativeElement
+        );
+        if (value !== inputValue) {
+          accessor.setElementValue(this.elementRef.nativeElement, value);
+        }
+      });
+    }
+  }
+}
+
 export const SignalFormsModule = [
   SignalFormInputNumberAccessorDirective,
   SignalFormInputTextAccessorDirective,
   SignalFormGroupDirective,
   SignalFormRootGroupDirective,
   SignalFormControlDirective,
+  SignalFormControlNameDirective,
 ];

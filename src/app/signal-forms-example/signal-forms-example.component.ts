@@ -41,27 +41,19 @@ type Form = SignalFormGroup<{
 
     <form #rootForm="sfGroup" [sfGroup]="this.form">
       <label for="text">Text</label>
-      <input type="text" name="text" [sfControl]="form.controls.text" />
+      <input type="text" name="text" sfControlName="text" />
       <br />
       <label for="number">Number</label>
-      <input type="number" name="number" [sfControl]="form.controls.number" />
+      <input type="number" name="number" sfControlName="number" />
 
       <fieldset [sfGroup]="this.form.controls.address">
         <legend>Address</legend>
 
         <label for="street">Street</label>
-        <input
-          type="text"
-          name="street"
-          [sfControl]="form.controls.address.controls.street"
-        />
+        <input type="text" name="street" sfControlName="street" />
         <br />
         <label for="city">City</label>
-        <input
-          type="text"
-          name="city"
-          [sfControl]="form.controls.address.controls.city"
-        />
+        <input type="text" name="city" sfControlName="city" />
       </fieldset>
 
       <div>
