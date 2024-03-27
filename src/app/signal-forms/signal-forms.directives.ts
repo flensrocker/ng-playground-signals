@@ -230,12 +230,18 @@ export class SignalFormControlNameDirective<
     skipSelf: true,
     host: true,
   });
-  readonly sfControl = computed(
-    () =>
-      this.#parent.group().controls[
-        this.sfControlName()
-      ] as SignalFormControl<TValue>
-  );
+
+  readonly sfControl = computed(() => {
+    const controlName = this.sfControlName();
+    const control = this.#parent.group().controls[controlName] as
+      | SignalFormControl<TValue>
+      | undefined;
+
+    if (control == null) {
+      throw new Error(`No control found with name: ${controlName}`);
+    }
+    return control;
+  });
 }
 
 export const SignalFormsModule = [
