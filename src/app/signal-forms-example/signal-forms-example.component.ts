@@ -64,6 +64,7 @@ type Form = SignalFormGroup<{
 
     <div>
       <button type="button" (click)="setFormValue()">set value</button>
+      <button type="button" (click)="patchFormValue()">patch value</button>
     </div>
 
     <pre>{{ debug() }}</pre>`,
@@ -129,6 +130,15 @@ export class SignalFormsExampleComponent {
       address: {
         street: 'Set Street!',
         city: 'Set City!',
+      },
+    });
+  }
+
+  patchFormValue() {
+    this.form.patchValue({
+      text: 'Patch Text!',
+      address: {
+        city: 'Patch City!',
       },
     });
   }

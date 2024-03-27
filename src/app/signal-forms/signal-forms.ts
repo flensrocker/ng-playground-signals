@@ -9,6 +9,12 @@ type Mutable<T> = T extends object
     }
   : T;
 
+type SignalPartial<T> = T extends object
+  ? {
+      readonly [K in keyof T]?: SignalPartial<T[K]>;
+    }
+  : T;
+
 export const SIGNAL_FORM_CONTROL = Symbol('SignalFormControl');
 export const SIGNAL_FORM_GROUP = Symbol('SignalFormGroup');
 
@@ -18,6 +24,7 @@ export type SignalFormBase<T> = {
   readonly value: Signal<T>;
   readonly dirty: Signal<boolean>;
   readonly setValue: (value: T) => void;
+  readonly patchValue: (value: SignalPartial<T>) => void;
   readonly reset: (initialValue?: T) => void;
 };
 
@@ -99,6 +106,13 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
       controls[prop].setValue(value[prop]);
     });
   };
+  const patchValue = (value: SignalPartial<InnerSignalFormGroupValue<T>>) => {
+    Object.keys(controls).forEach((prop) => {
+      if (prop in value) {
+        controls[prop].patchValue(value[prop]);
+      }
+    });
+  };
   const reset = (initialValue?: InnerSignalFormGroupValue<T>) => {
     Object.keys(controls).forEach((prop) => {
       controls[prop].reset(
@@ -116,6 +130,7 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
     value: $value,
     dirty: $dirty,
     setValue,
+    patchValue,
     reset,
   };
 
@@ -135,6 +150,7 @@ export const signalFormControl = <T extends NonNullable<SignalFormAny> | null>(
   const $dirty = computed(() => $initialValue() !== $value());
 
   const setValue = (value: T) => $value.set(value);
+  const patchValue = (value: SignalPartial<T>) => $value.set(value as T);
   const reset = (initialValue?: T) => {
     if (initialValue !== undefined) {
       $initialValue.set(initialValue);
@@ -148,6 +164,7 @@ export const signalFormControl = <T extends NonNullable<SignalFormAny> | null>(
     value: $value.asReadonly(),
     dirty: $dirty,
     setValue,
+    patchValue,
     reset,
   };
 };
