@@ -187,10 +187,6 @@ export const sfGroup = <T extends SignalFormGroupControls>(
     $errors = computed(() => null);
   }
   const $status = computed((): SignalFormStatus => {
-    if ($errors() != null) {
-      return 'INVALID';
-    }
-
     return Object.keys(controls).reduce(
       (status: SignalFormStatus, ctrlName) => {
         const controlStatus = controls[ctrlName].status();
@@ -198,7 +194,7 @@ export const sfGroup = <T extends SignalFormGroupControls>(
           ? 'INVALID'
           : 'VALID';
       },
-      'VALID'
+      $errors() == null ? 'VALID' : 'INVALID'
     );
   });
 

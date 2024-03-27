@@ -66,8 +66,9 @@ const textTooLong: SignalFormValidatorFn<unknown> = (
     }
 
     return {
-      textTooLong: {
-        maxLength: number,
+      max: {
+        max: number,
+        actual: text.length,
       },
     };
   });
