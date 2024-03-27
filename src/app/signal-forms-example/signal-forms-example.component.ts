@@ -39,7 +39,7 @@ type Form = SignalFormGroup<{
   imports: [SignalForms],
   template: `<h1>Signal-Forms</h1>
 
-    <form #rootForm="sfGroup" [sfGroup]="this.form">
+    <form #sfForm="sfForm" [sfGroup]="this.form">
       <label for="text">Text</label>
       <input type="text" name="text" sfControlName="text" />
       <br />
@@ -79,12 +79,12 @@ export class SignalFormsExampleComponent {
     }),
   });
 
-  protected readonly rootForm =
+  protected readonly sfForm =
     viewChild.required<SignalFormRootGroupDirective<Form['controls']>>(
-      'rootForm'
+      'sfForm'
     );
 
-  readonly #reset$ = toObservable(this.rootForm)
+  readonly #reset$ = toObservable(this.sfForm)
     .pipe(
       switchMap((rootForm) => outputToObservable(rootForm.sfReset)),
       takeUntilDestroyed()
@@ -96,7 +96,7 @@ export class SignalFormsExampleComponent {
       },
     });
 
-  readonly #submit$ = toObservable(this.rootForm)
+  readonly #submit$ = toObservable(this.sfForm)
     .pipe(
       switchMap((rootForm) => outputToObservable(rootForm.sfSubmit)),
       takeUntilDestroyed()

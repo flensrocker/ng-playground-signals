@@ -57,7 +57,7 @@ const rootGroupDirectiveProvider: Provider = {
 
 @Directive({
   selector: 'form[sfGroup]',
-  exportAs: 'sfGroup',
+  exportAs: 'sfForm',
   standalone: true,
   providers: [rootGroupDirectiveProvider],
   // eslint-disable-next-line @angular-eslint/no-host-metadata-property
