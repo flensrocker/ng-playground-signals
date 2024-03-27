@@ -76,7 +76,7 @@ export const isSignalFormControl = <T>(
   );
 };
 
-export const signalFormGroup = <T extends SignalFormGroupControls>(
+export const sfGroup = <T extends SignalFormGroupControls>(
   controls: T
 ): SignalFormGroup<T> => {
   const $initialValue = computed(() => {
@@ -142,7 +142,7 @@ export const signalFormGroup = <T extends SignalFormGroupControls>(
   return formGroup;
 };
 
-export const signalFormControl = <T extends NonNullable<SignalFormAny> | null>(
+export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
   initialValue: T
 ): SignalFormControl<T> => {
   const $initialValue = signal(initialValue);

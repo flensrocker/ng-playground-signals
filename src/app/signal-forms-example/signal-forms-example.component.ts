@@ -17,8 +17,8 @@ import {
   SignalFormGroup,
   SignalFormRootGroupDirective,
   SignalFormsModule,
-  signalFormControl,
-  signalFormGroup,
+  sfControl,
+  sfGroup,
 } from '../signal-forms';
 
 type AddressForm = SignalFormGroup<{
@@ -70,12 +70,12 @@ type Form = SignalFormGroup<{
     <pre>{{ debug() }}</pre>`,
 })
 export class SignalFormsExampleComponent {
-  protected readonly form: Form = signalFormGroup({
-    text: signalFormControl<string>('Init!'),
-    number: signalFormControl<number>(1),
-    address: signalFormGroup({
-      street: signalFormControl<string>(''),
-      city: signalFormControl<string>(''),
+  protected readonly form: Form = sfGroup({
+    text: sfControl<string>('Init!'),
+    number: sfControl<number>(1),
+    address: sfGroup({
+      street: sfControl<string>(''),
+      city: sfControl<string>(''),
     }),
   });
 
