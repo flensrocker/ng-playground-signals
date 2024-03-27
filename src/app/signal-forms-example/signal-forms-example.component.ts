@@ -18,6 +18,8 @@ import {
   SignalFormGroup,
   SignalFormGroupControls,
   SignalFormRootGroupDirective,
+  SignalFormStatus,
+  SignalFormValidationErrors,
   SignalFormValidatorFn,
   SignalFormValidators,
   SignalForms,
@@ -158,51 +160,11 @@ export class SignalFormsExampleComponent {
     });
 
   protected readonly debug = computed(() => {
-    const controls = Object.keys(this.form.controls).reduce(
-      (controls, controlName) => {
-        return {
-          ...controls,
-          initialValue: {
-            ...controls.initialValue,
-            [controlName]: (this.form.controls as SignalFormGroupControls)[
-              controlName
-            ].initialValue(),
-          },
-          value: {
-            ...controls.value,
-            [controlName]: (this.form.controls as SignalFormGroupControls)[
-              controlName
-            ].value(),
-          },
-          dirty: {
-            ...controls.dirty,
-            [controlName]: (this.form.controls as SignalFormGroupControls)[
-              controlName
-            ].dirty(),
-          },
-          errors: {
-            ...controls.errors,
-            [controlName]: (this.form.controls as SignalFormGroupControls)[
-              controlName
-            ].errors(),
-          },
-          status: {
-            ...controls.status,
-            [controlName]: (this.form.controls as SignalFormGroupControls)[
-              controlName
-            ].status(),
-          },
-        };
-      },
-      { initialValue: {}, value: {}, dirty: {}, errors: {}, status: {} }
-    );
+    const form = traverseSignalForm<Form['controls'], Form>(this.form);
     const data = {
-      initialValue: this.form.initialValue(),
-      value: this.form.value(),
-      dirty: this.form.dirty(),
-      errors: this.form.errors(),
-      status: this.form.status(),
-      controls,
+      formInitialValue: this.form.initialValue(),
+      formValue: this.form.value(),
+      form,
     };
 
     return JSON.stringify(data, undefined, '  ');
@@ -228,3 +190,58 @@ export class SignalFormsExampleComponent {
     });
   }
 }
+
+type FormDebug<TForm> = TForm extends SignalFormControl<infer TValue>
+  ? {
+      initialValue: TValue;
+      value: TValue;
+      dirty: boolean;
+      errors: SignalFormValidationErrors | null;
+      status: SignalFormStatus;
+    }
+  : TForm extends SignalFormGroup<infer TControls>
+  ? {
+      controls: {
+        [K in keyof TControls]: FormDebug<TControls[K]>;
+      };
+      dirty: boolean;
+      errors: SignalFormValidationErrors | null;
+      status: SignalFormStatus;
+    }
+  : never;
+
+const traverseSignalForm = <
+  TControls extends SignalFormGroupControls,
+  TForm extends SignalFormGroup<TControls>
+>(
+  group: TForm
+): FormDebug<TForm> => {
+  const controls = Object.keys(group.controls).reduce(
+    (controls, controlName) => {
+      const child = group.controls[controlName];
+      return isSignalFormGroup(child)
+        ? {
+            ...controls,
+            [controlName]: traverseSignalForm(child),
+          }
+        : {
+            ...controls,
+            [controlName]: {
+              initialValue: child.initialValue(),
+              value: child.value(),
+              dirty: child.dirty(),
+              errors: child.errors(),
+              status: child.status(),
+            },
+          };
+    },
+    {}
+  );
+
+  return {
+    controls,
+    dirty: group.dirty(),
+    errors: group.errors(),
+    status: group.status(),
+  } as FormDebug<TForm>;
+};
