@@ -178,36 +178,40 @@ export const SIGNAL_FORM_ACCESSOR = new InjectionToken<
   ReadonlyArray<SignalFormAccessor<unknown>>
 >('SignalFormAccessor');
 
-export const SIGNAL_FORM_TEXT_ACCESSOR: Provider = {
+export const SIGNAL_FORM_INPUT_TEXT_ACCESSOR: Provider = {
   provide: SIGNAL_FORM_ACCESSOR,
   useExisting: forwardRef(() => SignalFormInputTextAccessorDirective),
   multi: true,
 };
 
-@Directive({
-  selector: 'input[type=text][sfControl], input[type=text][sfControlName]',
-  standalone: true,
-  providers: [SIGNAL_FORM_TEXT_ACCESSOR],
-})
-export class SignalFormInputTextAccessorDirective extends BuiltInSignalFormAccessor<string> {
+@Directive()
+export abstract class SignalFormInputBaseAccessorDirective<
+  TValue
+> extends BuiltInSignalFormAccessor<TValue> {
+  abstract readonly getElementValue: (element: HTMLInputElement) => TValue;
+  abstract readonly setElementValue: (
+    element: HTMLInputElement,
+    value: TValue
+  ) => void;
+
   readonly #injector = inject(Injector);
   readonly #elementRef = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
-  readonly connect = ($sfControl: Signal<SignalFormControl<string>>) => {
+  readonly connect = ($sfControl: Signal<SignalFormControl<TValue>>) => {
     setValueFromElementToControl(
       $sfControl,
       this.#elementRef.nativeElement,
       'input',
-      (element) => element.value,
+      (element) => this.getElementValue(element),
       this.#injector
     );
 
     effect(
       () => {
         const value = $sfControl().value();
-        const inputValue = this.#elementRef.nativeElement.value;
+        const inputValue = this.getElementValue(this.#elementRef.nativeElement);
         if (value !== inputValue) {
-          this.#elementRef.nativeElement.value = value;
+          this.setElementValue(this.#elementRef.nativeElement, value);
         }
       },
       { injector: this.#injector }
@@ -215,7 +219,18 @@ export class SignalFormInputTextAccessorDirective extends BuiltInSignalFormAcces
   };
 }
 
-export const SIGNAL_FORM_NUMBER_ACCESSOR: Provider = {
+@Directive({
+  selector: 'input[type=text][sfControl], input[type=text][sfControlName]',
+  standalone: true,
+  providers: [SIGNAL_FORM_INPUT_TEXT_ACCESSOR],
+})
+export class SignalFormInputTextAccessorDirective extends SignalFormInputBaseAccessorDirective<string> {
+  readonly getElementValue = (element: HTMLInputElement) => element.value;
+  readonly setElementValue = (element: HTMLInputElement, value: string) =>
+    (element.value = value);
+}
+
+export const SIGNAL_FORM_INPUT_NUMBER_ACCESSOR: Provider = {
   provide: SIGNAL_FORM_ACCESSOR,
   useExisting: forwardRef(() => SignalFormInputNumberAccessorDirective),
   multi: true,
@@ -228,34 +243,13 @@ const normalizeNumber = (number: number): number => {
 @Directive({
   selector: 'input[type=number][sfControl], input[type=number][sfControlName]',
   standalone: true,
-  providers: [SIGNAL_FORM_NUMBER_ACCESSOR],
+  providers: [SIGNAL_FORM_INPUT_NUMBER_ACCESSOR],
 })
-export class SignalFormInputNumberAccessorDirective extends BuiltInSignalFormAccessor<number> {
-  readonly #injector = inject(Injector);
-  readonly #elementRef = inject<ElementRef<HTMLInputElement>>(ElementRef);
-
-  readonly connect = ($sfControl: Signal<SignalFormControl<number>>) => {
-    setValueFromElementToControl(
-      $sfControl,
-      this.#elementRef.nativeElement,
-      'input',
-      (element) => normalizeNumber(element.valueAsNumber),
-      this.#injector
-    );
-
-    effect(
-      () => {
-        const value = $sfControl().value();
-        const inputValue = normalizeNumber(
-          this.#elementRef.nativeElement.valueAsNumber
-        );
-        if (value !== inputValue) {
-          this.#elementRef.nativeElement.valueAsNumber = value;
-        }
-      },
-      { injector: this.#injector }
-    );
-  };
+export class SignalFormInputNumberAccessorDirective extends SignalFormInputBaseAccessorDirective<number> {
+  readonly getElementValue = (element: HTMLInputElement) =>
+    normalizeNumber(element.valueAsNumber);
+  readonly setElementValue = (element: HTMLInputElement, value: number) =>
+    (element.valueAsNumber = value);
 }
 
 @Directive()
