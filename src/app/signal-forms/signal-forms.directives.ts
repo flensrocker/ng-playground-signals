@@ -1,9 +1,12 @@
 import {
+  DestroyRef,
   Directive,
   ElementRef,
   InjectionToken,
+  Injector,
   Provider,
   Signal,
+  afterNextRender,
   computed,
   effect,
   forwardRef,
@@ -72,9 +75,10 @@ const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
   $control: Signal<SignalFormControl<TValue>>,
   element: TElement,
   eventName: string,
-  getElementValue: (input: TElement) => TValue
+  getElementValue: (input: TElement) => TValue,
+  injector?: Injector
 ): Subscription => {
-  return toObservable($control)
+  return toObservable($control, { injector })
     .pipe(
       switchMap((control) =>
         fromEvent(element, eventName).pipe(
@@ -84,7 +88,7 @@ const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
           })
         )
       ),
-      takeUntilDestroyed()
+      takeUntilDestroyed(injector?.get(DestroyRef))
     )
     .subscribe({
       next: ({ control, value }) => {
@@ -157,13 +161,11 @@ export class SignalFormInputNumberAccessorDirective
   }
 }
 
-@Directive({
-  selector: '[sfControl]',
-  exportAs: 'sfControl',
-  standalone: true,
-})
-export class SignalFormControlDirective<TValue> {
-  readonly sfControl = input.required<SignalFormControl<TValue>>();
+@Directive()
+export abstract class SignalFormControlBaseDirective<TValue> {
+  readonly #injector = inject(Injector);
+
+  abstract readonly sfControl: Signal<SignalFormControl<TValue>>;
 
   protected readonly accessors = inject<
     SignalFormAccessor<HTMLElement, TValue>[]
@@ -174,27 +176,44 @@ export class SignalFormControlDirective<TValue> {
   protected readonly elementRef = inject(ElementRef);
 
   constructor() {
-    if (this.accessors != null && this.accessors.length > 0) {
-      const accessor = this.accessors[0];
+    afterNextRender(() => {
+      if (this.accessors != null && this.accessors.length > 0) {
+        const accessor = this.accessors[0];
 
-      setValueFromElementToControl(
-        this.sfControl,
-        this.elementRef.nativeElement,
-        accessor.eventName,
-        (element) => accessor.getElementValue(element)
-      );
-
-      effect(() => {
-        const value = this.sfControl().value();
-        const inputValue = accessor.getElementValue(
-          this.elementRef.nativeElement
+        setValueFromElementToControl(
+          this.sfControl,
+          this.elementRef.nativeElement,
+          accessor.eventName,
+          (element) => accessor.getElementValue(element),
+          this.#injector
         );
-        if (value !== inputValue) {
-          accessor.setElementValue(this.elementRef.nativeElement, value);
-        }
-      });
-    }
+
+        effect(
+          () => {
+            const value = this.sfControl().value();
+            const inputValue = accessor.getElementValue(
+              this.elementRef.nativeElement
+            );
+            if (value !== inputValue) {
+              accessor.setElementValue(this.elementRef.nativeElement, value);
+            }
+          },
+          { injector: this.#injector }
+        );
+      }
+    });
   }
+}
+
+@Directive({
+  selector: '[sfControl]',
+  exportAs: 'sfControl',
+  standalone: true,
+})
+export class SignalFormControlDirective<
+  TValue
+> extends SignalFormControlBaseDirective<TValue> {
+  readonly sfControl = input.required<SignalFormControl<TValue>>();
 }
 
 @Directive({
@@ -202,50 +221,21 @@ export class SignalFormControlDirective<TValue> {
   exportAs: 'sfControlName',
   standalone: true,
 })
-export class SignalFormControlNameDirective<TValue> {
+export class SignalFormControlNameDirective<
+  TValue
+> extends SignalFormControlBaseDirective<TValue> {
   readonly sfControlName = input.required<string>();
 
-  protected readonly parent = inject(SignalFormGroupBaseDirective, {
+  readonly #parent = inject(SignalFormGroupBaseDirective, {
     skipSelf: true,
     host: true,
   });
-  readonly #sfControl = computed(
+  readonly sfControl = computed(
     () =>
-      this.parent.group().controls[
+      this.#parent.group().controls[
         this.sfControlName()
       ] as SignalFormControl<TValue>
   );
-
-  protected readonly accessors = inject<
-    SignalFormAccessor<HTMLElement, TValue>[]
-  >(SIGNAL_FORM_ACCESSOR, {
-    optional: true,
-    self: true,
-  });
-  protected readonly elementRef = inject(ElementRef);
-
-  constructor() {
-    if (this.accessors != null && this.accessors.length > 0) {
-      const accessor = this.accessors[0];
-
-      setValueFromElementToControl(
-        this.#sfControl,
-        this.elementRef.nativeElement,
-        accessor.eventName,
-        (element) => accessor.getElementValue(element)
-      );
-
-      effect(() => {
-        const value = this.#sfControl().value();
-        const inputValue = accessor.getElementValue(
-          this.elementRef.nativeElement
-        );
-        if (value !== inputValue) {
-          accessor.setElementValue(this.elementRef.nativeElement, value);
-        }
-      });
-    }
-  }
 }
 
 export const SignalFormsModule = [
