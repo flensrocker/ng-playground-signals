@@ -38,7 +38,7 @@ type Form = SignalFormGroup<{
   readonly address: AddressForm;
 }>;
 
-const textLongerThanNumber: SignalFormValidatorFn<unknown> = (
+const textTooLong: SignalFormValidatorFn<unknown> = (
   group: SignalFormBase<unknown>
 ) =>
   computed(() => {
@@ -125,7 +125,7 @@ export class SignalFormsExampleComponent {
         }),
       }),
     },
-    { validators: [textLongerThanNumber] }
+    { validators: [textTooLong] }
   );
 
   protected readonly sfForm =
