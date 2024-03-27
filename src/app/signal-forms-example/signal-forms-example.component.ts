@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Signal,
   computed,
   viewChild,
 } from '@angular/core';
@@ -209,6 +210,53 @@ type FormDebug<TForm> = TForm extends SignalFormControl<infer TValue>
       status: SignalFormStatus;
     }
   : never;
+
+type DebugFormValue<
+  TGroupControls extends SignalFormGroupControls,
+  TGroup extends SignalFormGroup<TGroupControls>
+> = {
+  [K in keyof TGroup['controls']]: TGroup['controls'][K] extends SignalFormControl<
+    infer TValue
+  >
+    ? TValue
+    : TGroup['controls'][K] extends SignalFormGroup<infer TChildControls>
+    ? DebugFormValue<TChildControls, TGroup['controls'][K]>
+    : never;
+};
+
+type DebugFormKey<
+  TGroupControls extends SignalFormGroupControls,
+  TGroup extends SignalFormGroup<TGroupControls>,
+  TKey extends keyof SignalFormBase<unknown>
+> = {
+  [K in keyof TGroup['controls']]: TGroup['controls'][K] extends SignalFormControl<
+    infer _V
+  >
+    ? TGroup['controls'][K][TKey] extends Signal<infer TKeyType>
+      ? TKeyType
+      : never
+    : TGroup['controls'][K] extends SignalFormGroup<infer TChildControls>
+    ? DebugFormKey<TChildControls, TGroup['controls'][K], TKey>
+    : never;
+};
+
+type DebugFormGroup<
+  TGroupControls extends SignalFormGroupControls,
+  TGroup extends SignalFormGroup<TGroupControls>
+> = {
+  controls: {
+    initialValue: DebugFormValue<TGroupControls, TGroup>;
+    value: DebugFormValue<TGroupControls, TGroup>;
+    dirty: DebugFormKey<TGroupControls, TGroup, 'dirty'>;
+    errors: DebugFormKey<TGroupControls, TGroup, 'errors'>;
+    status: DebugFormKey<TGroupControls, TGroup, 'status'>;
+  };
+  dirty: boolean;
+  errors: SignalFormValidationErrors | null;
+  status: SignalFormStatus;
+};
+
+const _test: DebugFormGroup<Form['controls'], Form> = null!;
 
 const traverseSignalForm = <
   TControls extends SignalFormGroupControls,
