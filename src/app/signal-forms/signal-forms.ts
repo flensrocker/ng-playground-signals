@@ -51,6 +51,24 @@ export type SignalFormControl<T> = SignalFormBase<T> & {
 export type SignalFormControlValue<T extends SignalFormControl<SignalFormAny>> =
   SignalFormBaseValue<T>;
 
+export const isSignalFormGroup = <T extends SignalFormGroupControls>(
+  group: unknown
+): group is SignalFormGroup<T> => {
+  return (
+    group != null && typeof group === 'object' && SIGNAL_FORM_GROUP in group
+  );
+};
+
+export const isSignalFormControl = <T>(
+  control: unknown
+): control is SignalFormControl<T> => {
+  return (
+    control != null &&
+    typeof control === 'object' &&
+    SIGNAL_FORM_CONTROL in control
+  );
+};
+
 export const signalFormGroup = <T extends SignalFormGroupControls>(
   controls: T
 ): SignalFormGroup<T> => {

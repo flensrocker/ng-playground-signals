@@ -46,7 +46,7 @@ type Form = SignalFormGroup<{
       <label for="number">Number</label>
       <input type="number" name="number" sfControlName="number" />
 
-      <fieldset [sfGroup]="this.form.controls.address">
+      <fieldset sfGroupName="address">
         <legend>Address</legend>
 
         <label for="street">Street</label>

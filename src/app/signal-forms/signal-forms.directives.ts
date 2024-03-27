@@ -22,15 +22,15 @@ import {
   SignalFormControl,
   SignalFormGroup,
   SignalFormGroupControls,
+  isSignalFormControl,
+  isSignalFormGroup,
 } from './signal-forms';
 
 @Directive()
 export abstract class SignalFormGroupBaseDirective<
   TControls extends SignalFormGroupControls
 > {
-  readonly group = input.required<SignalFormGroup<TControls>>({
-    alias: 'sfGroup',
-  });
+  abstract readonly sfGroup: Signal<SignalFormGroup<TControls>>;
 }
 
 const groupDirectiveProvider: Provider = {
@@ -46,7 +46,9 @@ const groupDirectiveProvider: Provider = {
 })
 export class SignalFormGroupDirective<
   TControls extends SignalFormGroupControls
-> extends SignalFormGroupBaseDirective<TControls> {}
+> extends SignalFormGroupBaseDirective<TControls> {
+  readonly sfGroup = input.required<SignalFormGroup<TControls>>();
+}
 
 const rootGroupDirectiveProvider: Provider = {
   provide: SignalFormGroupBaseDirective,
@@ -60,15 +62,52 @@ const rootGroupDirectiveProvider: Provider = {
   providers: [rootGroupDirectiveProvider],
   // eslint-disable-next-line @angular-eslint/no-host-metadata-property
   host: {
-    '(reset)': 'this.sfReset.emit(this.group()) || false',
-    '(submit)': 'this.sfSubmit.emit(this.group()) || false',
+    '(reset)': 'this.sfReset.emit(this.sfGroup()) || false',
+    '(submit)': 'this.sfSubmit.emit(this.sfGroup()) || false',
   },
 })
 export class SignalFormRootGroupDirective<
   TControls extends SignalFormGroupControls
-> extends SignalFormGroupBaseDirective<TControls> {
+> extends SignalFormGroupDirective<TControls> {
   readonly sfReset = output<SignalFormGroup<TControls>>();
   readonly sfSubmit = output<SignalFormGroup<TControls>>();
+}
+
+const groupNameDirectiveProvider: Provider = {
+  provide: SignalFormGroupBaseDirective,
+  useExisting: forwardRef(() => SignalFormGroupNameDirective),
+};
+
+@Directive({
+  selector: ':not(form)[sfGroupName]',
+  exportAs: 'sfGroupName',
+  standalone: true,
+  providers: [groupNameDirectiveProvider],
+})
+export class SignalFormGroupNameDirective<
+  TControls extends SignalFormGroupControls
+> extends SignalFormGroupBaseDirective<TControls> {
+  readonly sfGroupName = input.required<string>();
+
+  readonly #parent = inject(SignalFormGroupBaseDirective, {
+    skipSelf: true,
+    host: true,
+  });
+
+  readonly sfGroup = computed(() => {
+    const groupName = this.sfGroupName();
+    const parentGroup = this.#parent.sfGroup();
+    const group = parentGroup.controls[groupName];
+
+    if (!isSignalFormGroup<TControls>(group)) {
+      console.error('Group not found', {
+        groupName,
+        parentGroup,
+      });
+      throw new Error(`No group found with name: ${groupName}`);
+    }
+    return group;
+  });
 }
 
 const setValueFromElementToControl = <TValue, TElement extends HTMLElement>(
@@ -233,11 +272,14 @@ export class SignalFormControlNameDirective<
 
   readonly sfControl = computed(() => {
     const controlName = this.sfControlName();
-    const control = this.#parent.group().controls[controlName] as
-      | SignalFormControl<TValue>
-      | undefined;
+    const parentGroup = this.#parent.sfGroup();
+    const control = parentGroup.controls[controlName];
 
-    if (control == null) {
+    if (!isSignalFormControl<TValue>(control)) {
+      console.error('Control not found', {
+        controlName,
+        parentGroup,
+      });
       throw new Error(`No control found with name: ${controlName}`);
     }
     return control;
@@ -245,10 +287,11 @@ export class SignalFormControlNameDirective<
 }
 
 export const SignalFormsModule = [
-  SignalFormInputNumberAccessorDirective,
-  SignalFormInputTextAccessorDirective,
   SignalFormGroupDirective,
   SignalFormRootGroupDirective,
+  SignalFormGroupNameDirective,
+  SignalFormInputNumberAccessorDirective,
+  SignalFormInputTextAccessorDirective,
   SignalFormControlDirective,
   SignalFormControlNameDirective,
 ];
