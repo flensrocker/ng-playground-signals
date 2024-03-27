@@ -16,7 +16,7 @@ import {
   SignalFormControl,
   SignalFormGroup,
   SignalFormRootGroupDirective,
-  SignalFormsModule,
+  SignalForms,
   sfControl,
   sfGroup,
 } from '../signal-forms';
@@ -36,7 +36,7 @@ type Form = SignalFormGroup<{
   selector: 'app-signal-forms',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SignalFormsModule],
+  imports: [SignalForms],
   template: `<h1>Signal-Forms</h1>
 
     <form #rootForm="sfGroup" [sfGroup]="this.form">

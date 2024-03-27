@@ -328,7 +328,7 @@ export class SignalFormControlNameDirective<
   });
 }
 
-export const SignalFormsModule = [
+export const SignalForms = [
   SignalFormGroupDirective,
   SignalFormRootGroupDirective,
   SignalFormGroupNameDirective,
