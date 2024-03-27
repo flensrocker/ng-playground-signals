@@ -15,7 +15,9 @@ import { switchMap } from 'rxjs';
 import {
   SignalFormControl,
   SignalFormGroup,
+  SignalFormGroupControls,
   SignalFormRootGroupDirective,
+  SignalFormValidators,
   SignalForms,
   sfControl,
   sfGroup,
@@ -71,7 +73,9 @@ type Form = SignalFormGroup<{
 })
 export class SignalFormsExampleComponent {
   protected readonly form: Form = sfGroup({
-    text: sfControl<string>('Init!'),
+    text: sfControl<string>('Init!', {
+      validators: [SignalFormValidators.required],
+    }),
     number: sfControl<number>(1),
     address: sfGroup({
       street: sfControl<string>(''),
@@ -108,16 +112,51 @@ export class SignalFormsExampleComponent {
     });
 
   protected readonly debug = computed(() => {
-    const address = {
-      initialValue: this.form.controls.address.initialValue(),
-      value: this.form.controls.address.value(),
-      dirty: this.form.controls.address.dirty(),
-    };
+    const controls = Object.keys(this.form.controls).reduce(
+      (controls, controlName) => {
+        return {
+          ...controls,
+          initialValue: {
+            ...controls.initialValue,
+            [controlName]: (this.form.controls as SignalFormGroupControls)[
+              controlName
+            ].initialValue(),
+          },
+          value: {
+            ...controls.value,
+            [controlName]: (this.form.controls as SignalFormGroupControls)[
+              controlName
+            ].value(),
+          },
+          dirty: {
+            ...controls.dirty,
+            [controlName]: (this.form.controls as SignalFormGroupControls)[
+              controlName
+            ].dirty(),
+          },
+          errors: {
+            ...controls.errors,
+            [controlName]: (this.form.controls as SignalFormGroupControls)[
+              controlName
+            ].errors(),
+          },
+          status: {
+            ...controls.status,
+            [controlName]: (this.form.controls as SignalFormGroupControls)[
+              controlName
+            ].status(),
+          },
+        };
+      },
+      { initialValue: {}, value: {}, dirty: {}, errors: {}, status: {} }
+    );
     const data = {
       initialValue: this.form.initialValue(),
       value: this.form.value(),
       dirty: this.form.dirty(),
-      address,
+      errors: this.form.errors(),
+      status: this.form.status(),
+      controls,
     };
 
     return JSON.stringify(data, undefined, '  ');
