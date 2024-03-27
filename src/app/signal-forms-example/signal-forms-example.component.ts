@@ -13,12 +13,16 @@ import {
 import { switchMap } from 'rxjs';
 
 import {
+  SignalFormBase,
   SignalFormControl,
   SignalFormGroup,
   SignalFormGroupControls,
   SignalFormRootGroupDirective,
+  SignalFormValidatorFn,
   SignalFormValidators,
   SignalForms,
+  isSignalFormControl,
+  isSignalFormGroup,
   sfControl,
   sfGroup,
 } from '../signal-forms';
@@ -33,6 +37,40 @@ type Form = SignalFormGroup<{
   readonly number: SignalFormControl<number>;
   readonly address: AddressForm;
 }>;
+
+const textLongerThanNumber: SignalFormValidatorFn<unknown> = (
+  group: SignalFormBase<unknown>
+) =>
+  computed(() => {
+    if (
+      !isSignalFormGroup(group) ||
+      !('text' in group.controls) ||
+      !('number' in group.controls)
+    ) {
+      return null;
+    }
+
+    const textCtrl = group.controls['text'];
+    const numberCtrl = group.controls['number'];
+    if (
+      !isSignalFormControl<string>(textCtrl) ||
+      !isSignalFormControl<number>(numberCtrl)
+    ) {
+      return null;
+    }
+
+    const text = textCtrl.value();
+    const number = numberCtrl.value();
+    if (text.length <= number) {
+      return null;
+    }
+
+    return {
+      textTooLong: {
+        maxLength: number,
+      },
+    };
+  });
 
 @Component({
   selector: 'app-signal-forms',
@@ -72,20 +110,23 @@ type Form = SignalFormGroup<{
     <pre>{{ debug() }}</pre>`,
 })
 export class SignalFormsExampleComponent {
-  protected readonly form: Form = sfGroup({
-    text: sfControl<string>('Init!', {
-      validators: [SignalFormValidators.required],
-    }),
-    number: sfControl<number>(1),
-    address: sfGroup({
-      street: sfControl<string>('', {
+  protected readonly form: Form = sfGroup(
+    {
+      text: sfControl<string>('Init!', {
         validators: [SignalFormValidators.required],
       }),
-      city: sfControl<string>('', {
-        validators: [SignalFormValidators.required],
+      number: sfControl<number>(1),
+      address: sfGroup({
+        street: sfControl<string>('', {
+          validators: [SignalFormValidators.required],
+        }),
+        city: sfControl<string>('', {
+          validators: [SignalFormValidators.required],
+        }),
       }),
-    }),
-  });
+    },
+    { validators: [textLongerThanNumber] }
+  );
 
   protected readonly sfForm =
     viewChild.required<SignalFormRootGroupDirective<Form['controls']>>(

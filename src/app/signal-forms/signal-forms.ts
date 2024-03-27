@@ -22,12 +22,12 @@ export type SignalFormStatus = 'VALID' | 'INVALID';
 export type SignalFormValidationErrors = Record<string, unknown>;
 
 export type SignalFormValidatorFn<TValue> = (
-  control: SignalFormControl<TValue>
+  control: SignalFormBase<TValue>
 ) => Signal<SignalFormValidationErrors | null>;
 
 export const SignalFormValidators = {
   required: <T extends string | ReadonlyArray<unknown>>(
-    control: SignalFormControl<T>
+    control: SignalFormBase<T>
   ) =>
     computed(() => {
       const value = control.value();
@@ -40,6 +40,10 @@ export const SignalFormValidators = {
 };
 
 export type SignalFormControlOptions = {
+  readonly validators?: readonly SignalFormValidatorFn<SignalFormAny>[];
+};
+
+export type SignalFormGroupOptions = {
   readonly validators?: readonly SignalFormValidatorFn<SignalFormAny>[];
 };
 
@@ -104,8 +108,8 @@ export const isSignalFormControl = <T>(
 };
 
 export const sfGroup = <T extends SignalFormGroupControls>(
-  controls: T
-  // TODO group options
+  controls: T,
+  options?: SignalFormGroupOptions
 ): SignalFormGroup<T> => {
   const $initialValue = computed(() => {
     return Object.keys(controls).reduce(
@@ -126,23 +130,6 @@ export const sfGroup = <T extends SignalFormGroupControls>(
     return Object.keys(controls).reduce(
       (isDirty, ctrlName) => isDirty || controls[ctrlName].dirty(),
       false
-    );
-  });
-  // TODO
-  const $errors = computed(() => null);
-  const $status = computed((): SignalFormStatus => {
-    if ($errors() != null) {
-      return 'INVALID';
-    }
-
-    return Object.keys(controls).reduce(
-      (status: SignalFormStatus, ctrlName) => {
-        const controlStatus = controls[ctrlName].status();
-        return status === 'INVALID' || controlStatus === 'INVALID'
-          ? 'INVALID'
-          : 'VALID';
-      },
-      'VALID'
     );
   });
 
@@ -168,25 +155,64 @@ export const sfGroup = <T extends SignalFormGroupControls>(
     });
   };
 
-  const formGroup: SignalFormGroup<T> = {
+  const group = {
     [SIGNAL_FORM_GROUP]: true,
     controls,
     initialValue: $initialValue,
     value: $value,
     dirty: $dirty,
-    errors: $errors,
-    status: $status,
     setValue,
     patchValue,
     reset,
-  };
+  } as SignalFormGroup<T>;
+
+  let $errors: Signal<SignalFormValidationErrors | null>;
+  if (options?.validators != null && options?.validators.length > 0) {
+    const validators = options.validators.map((validator) => validator(group));
+    $errors = computed(() => {
+      const valErrors = validators.reduce((valErrors, validator) => {
+        const valError = validator();
+        if (valError == null) {
+          return valErrors;
+        }
+
+        return {
+          ...valErrors,
+          ...valError,
+        };
+      }, null as SignalFormValidationErrors | null);
+      return valErrors;
+    });
+  } else {
+    $errors = computed(() => null);
+  }
+  const $status = computed((): SignalFormStatus => {
+    if ($errors() != null) {
+      return 'INVALID';
+    }
+
+    return Object.keys(controls).reduce(
+      (status: SignalFormStatus, ctrlName) => {
+        const controlStatus = controls[ctrlName].status();
+        return status === 'INVALID' || controlStatus === 'INVALID'
+          ? 'INVALID'
+          : 'VALID';
+      },
+      'VALID'
+    );
+  });
 
   Object.keys(controls).forEach((ctrlName) => {
     (controls[ctrlName] as Mutable<SignalFormBase<SignalFormAny>>).parent =
-      formGroup;
+      group;
   });
+  const mutableGroup = group as Mutable<
+    Pick<SignalFormGroup<T>, 'errors' | 'status'>
+  >;
+  mutableGroup.errors = $errors;
+  mutableGroup.status = $status;
 
-  return formGroup;
+  return group;
 };
 
 export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
@@ -242,7 +268,9 @@ export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
     (): SignalFormStatus => ($errors() == null ? 'VALID' : 'INVALID')
   );
 
-  const mutableControl = control as Mutable<SignalFormControl<T>>;
+  const mutableControl = control as Mutable<
+    Pick<SignalFormControl<T>, 'errors' | 'status'>
+  >;
   mutableControl.errors = $errors;
   mutableControl.status = $status;
 
