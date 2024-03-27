@@ -78,8 +78,12 @@ export class SignalFormsExampleComponent {
     }),
     number: sfControl<number>(1),
     address: sfGroup({
-      street: sfControl<string>(''),
-      city: sfControl<string>(''),
+      street: sfControl<string>('', {
+        validators: [SignalFormValidators.required],
+      }),
+      city: sfControl<string>('', {
+        validators: [SignalFormValidators.required],
+      }),
     }),
   });
 

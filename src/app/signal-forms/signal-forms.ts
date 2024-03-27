@@ -130,9 +130,21 @@ export const sfGroup = <T extends SignalFormGroupControls>(
   });
   // TODO
   const $errors = computed(() => null);
-  const $status: Signal<SignalFormStatus> = computed(() =>
-    $errors() == null ? 'VALID' : 'INVALID'
-  );
+  const $status = computed((): SignalFormStatus => {
+    if ($errors() != null) {
+      return 'INVALID';
+    }
+
+    return Object.keys(controls).reduce(
+      (status: SignalFormStatus, ctrlName) => {
+        const controlStatus = controls[ctrlName].status();
+        return status === 'INVALID' || controlStatus === 'INVALID'
+          ? 'INVALID'
+          : 'VALID';
+      },
+      'VALID'
+    );
+  });
 
   const setValue = (value: InnerSignalFormGroupValue<T>) => {
     Object.keys(controls).forEach((prop) => {
