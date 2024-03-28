@@ -100,7 +100,7 @@ const textTooLong: SignalFormValidatorFn<unknown> = (
       </fieldset>
 
       <div>
-        <button type="submit">submit</button>
+        <button type="submit" [disabled]="disableSubmit()">submit</button>
         <button type="reset">reset</button>
       </div>
     </form>
@@ -130,6 +130,8 @@ export class SignalFormsExampleComponent {
     },
     { validators: [textTooLong] }
   );
+
+  protected readonly disableSubmit = computed(() => !this.form.valid());
 
   protected readonly sfForm =
     viewChild.required<SignalFormRootGroupDirective<Form['controls']>>(

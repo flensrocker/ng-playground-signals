@@ -62,6 +62,7 @@ export type SignalFormBase<T> = {
   readonly dirty: Signal<boolean>;
   readonly errors: Signal<SignalFormValidationErrors | null>;
   readonly status: Signal<SignalFormStatus>;
+  readonly valid: Signal<boolean>;
   readonly setValue: (value: T) => void;
   readonly patchValue: (value: SignalPartial<T>) => void;
   readonly reset: (initialValue?: T) => void;
@@ -179,6 +180,7 @@ export const sfGroup = <T extends SignalFormGroupControls>(
     dirty: $dirty,
     errors: null!,
     status: null!,
+    valid: null!,
     setValue,
     patchValue,
     reset,
@@ -215,16 +217,18 @@ export const sfGroup = <T extends SignalFormGroupControls>(
       $errors() == null ? 'VALID' : 'INVALID'
     );
   });
+  const $valid = computed(() => $status() === 'VALID');
 
   Object.keys(controls).forEach((ctrlName) => {
     (controls[ctrlName] as Mutable<SignalFormBase<SignalFormAny>>).parent =
       group;
   });
   const mutableGroup = group as Mutable<
-    Pick<SignalFormGroup<T>, 'errors' | 'status'>
+    Pick<SignalFormGroup<T>, 'errors' | 'status' | 'valid'>
   >;
   mutableGroup.errors = $errors;
   mutableGroup.status = $status;
+  mutableGroup.valid = $valid;
 
   return group;
 };
@@ -259,6 +263,7 @@ export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
     dirty: $dirty,
     errors: null!,
     status: null!,
+    valid: null!,
     setValue,
     patchValue,
     reset,
@@ -289,12 +294,14 @@ export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
   const $status = computed(
     (): SignalFormStatus => ($errors() == null ? 'VALID' : 'INVALID')
   );
+  const $valid = computed(() => $status() === 'VALID');
 
   const mutableControl = control as Mutable<
-    Pick<SignalFormControl<T>, 'errors' | 'status'>
+    Pick<SignalFormControl<T>, 'errors' | 'status' | 'valid'>
   >;
   mutableControl.errors = $errors;
   mutableControl.status = $status;
+  mutableControl.valid = $valid;
 
   return control;
 };
