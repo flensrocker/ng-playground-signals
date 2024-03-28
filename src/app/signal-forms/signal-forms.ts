@@ -40,11 +40,19 @@ export const SignalFormValidators = {
 };
 
 export type SignalFormControlOptions = {
-  readonly validators?: readonly SignalFormValidatorFn<SignalFormAny>[];
+  readonly validators: readonly SignalFormValidatorFn<SignalFormAny>[];
+};
+
+const sfControlDefaultOptions: SignalFormControlOptions = {
+  validators: [],
 };
 
 export type SignalFormGroupOptions = {
-  readonly validators?: readonly SignalFormValidatorFn<SignalFormAny>[];
+  readonly validators: readonly SignalFormValidatorFn<SignalFormAny>[];
+};
+
+const sfGroupDefaultOptions: SignalFormGroupOptions = {
+  validators: [],
 };
 
 export type SignalFormBase<T> = {
@@ -76,6 +84,7 @@ export type SignalFormGroup<T extends SignalFormGroupControls> = SignalFormBase<
   InnerSignalFormGroupValue<T>
 > & {
   readonly [SIGNAL_FORM_GROUP]: true;
+  readonly options: SignalFormGroupOptions;
   readonly controls: T;
 };
 
@@ -84,6 +93,7 @@ export type SignalFormGroupValue<T extends SignalFormGroup<SignalFormAny>> =
 
 export type SignalFormControl<T> = SignalFormBase<T> & {
   readonly [SIGNAL_FORM_CONTROL]: true;
+  readonly options: SignalFormControlOptions;
 };
 
 export type SignalFormControlValue<T extends SignalFormControl<SignalFormAny>> =
@@ -109,8 +119,13 @@ export const isSignalFormControl = <T>(
 
 export const sfGroup = <T extends SignalFormGroupControls>(
   controls: T,
-  options?: SignalFormGroupOptions
+  options?: Partial<SignalFormGroupOptions>
 ): SignalFormGroup<T> => {
+  const mergedOptions: SignalFormGroupOptions = {
+    ...sfGroupDefaultOptions,
+    ...options,
+  };
+
   const $initialValue = computed(() => {
     return Object.keys(controls).reduce(
       (val, ctrlName) => ({
@@ -155,16 +170,19 @@ export const sfGroup = <T extends SignalFormGroupControls>(
     });
   };
 
-  const group = {
+  const group: SignalFormGroup<T> = {
     [SIGNAL_FORM_GROUP]: true,
+    options: mergedOptions,
     controls,
     initialValue: $initialValue,
     value: $value,
     dirty: $dirty,
+    errors: null!,
+    status: null!,
     setValue,
     patchValue,
     reset,
-  } as SignalFormGroup<T>;
+  };
 
   let $errors: Signal<SignalFormValidationErrors | null>;
   if (options?.validators != null && options?.validators.length > 0) {
@@ -213,8 +231,13 @@ export const sfGroup = <T extends SignalFormGroupControls>(
 
 export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
   initialValue: T,
-  options?: SignalFormControlOptions
+  options?: Partial<SignalFormControlOptions>
 ): SignalFormControl<T> => {
+  const mergedOptions: SignalFormControlOptions = {
+    ...sfControlDefaultOptions,
+    ...options,
+  };
+
   const $initialValue = signal(initialValue);
   const $value = signal(initialValue);
   const $dirty = computed(() => $initialValue() !== $value());
@@ -228,15 +251,18 @@ export const sfControl = <T extends NonNullable<SignalFormAny> | null>(
     $value.set($initialValue());
   };
 
-  const control = {
+  const control: SignalFormControl<T> = {
     [SIGNAL_FORM_CONTROL]: true,
+    options: mergedOptions,
     initialValue: $initialValue.asReadonly(),
     value: $value.asReadonly(),
     dirty: $dirty,
+    errors: null!,
+    status: null!,
     setValue,
     patchValue,
     reset,
-  } as SignalFormControl<T>;
+  };
 
   let $errors: Signal<SignalFormValidationErrors | null>;
   if (options?.validators != null && options?.validators.length > 0) {
