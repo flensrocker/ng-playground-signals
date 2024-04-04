@@ -63,7 +63,9 @@ export type ObjectKeysCapitalized<T> = {
  * It's used as a return type of {@link createNamedObjectKeys} and {@link getObjectKeys}.
  */
 export type NamedObjectKeys<Name extends string, T> = {
-  readonly [K in keyof ObjectKeysCapitalized<T>]: `${Name}${ObjectKeysCapitalized<T>[K]}`;
+  readonly [K in keyof ObjectKeysCapitalized<T>]: ObjectKeysCapitalized<T>[K] extends string
+    ? `${Name}${ObjectKeysCapitalized<T>[K]}`
+    : never;
 };
 
 /**
