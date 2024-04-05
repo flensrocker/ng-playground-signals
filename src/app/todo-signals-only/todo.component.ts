@@ -15,7 +15,6 @@ import { combineLatest, map, switchMap } from 'rxjs';
 
 import {
   PaginatorComponent,
-  filterNotNull,
   formChangeSubmitDebounced,
   resetPageIndex,
   serviceState,
@@ -56,7 +55,6 @@ import {
     <div>
       <mat-error>{{ searchState.error() }}</mat-error>
     </div>
-
     } @if (hasNoResult()) {
     <div>No todos found.</div>
     } @else {
@@ -101,9 +99,8 @@ export class TodoComponent {
     })
   );
 
-  protected readonly searchCmp = viewChild(TodoSearchComponent);
+  protected readonly searchCmp = viewChild.required(TodoSearchComponent);
   readonly #searchSubmits$ = toObservable(this.searchCmp).pipe(
-    filterNotNull(),
     switchMap((cmp) => outputToObservable(cmp.formSubmit))
   );
 
@@ -129,7 +126,10 @@ export class TodoComponent {
   protected readonly searchState = serviceState(
     this.#searchRequest$,
     (searchRequest) => this.#todoService.search(searchRequest),
-    emptySearchTodoResponse
+    {
+      behavior: 'SWITCH',
+      defaultResponse: emptySearchTodoResponse,
+    }
   );
 
   protected readonly todoTotalCount = computed(

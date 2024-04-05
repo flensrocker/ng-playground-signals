@@ -10,7 +10,6 @@ import {
 import {
   EMPTY,
   Observable,
-  combineLatest,
   debounce,
   delay,
   fromEvent,
@@ -19,6 +18,7 @@ import {
   of,
   startWith,
   switchMap,
+  withLatestFrom,
 } from 'rxjs';
 
 export type FormChange<TFormValue> = {
@@ -46,26 +46,33 @@ export function formChangeSubmitDebounced<TFormValue>(
     }))
   );
 
-  const changesNotDebounced$ =
+  const changesNotDebounced$ = (
     formChangesNotDebounced == null
       ? EMPTY
-      : toObservable(formChangesNotDebounced);
-
-  const submits$ = combineLatest([formSubmits$, changesNotDebounced$]).pipe(
-    map(([submittedValue, changedValue]) => {
-      const value: TFormValue = {
-        ...submittedValue,
-        ...changedValue,
-      };
-
-      return {
+      : toObservable(formChangesNotDebounced)
+  ).pipe(
+    withLatestFrom(changes$),
+    map(
+      ([partialValue, { value }]): FormSubmit<TFormValue> => ({
         type: 'SUBMIT',
-        value,
-      };
-    })
+        value: {
+          ...value,
+          ...partialValue,
+        },
+      })
+    )
   );
 
-  return merge(changes$, submits$).pipe(
+  const submits$ = formSubmits$.pipe(
+    map(
+      (value): FormSubmit<TFormValue> => ({
+        type: 'SUBMIT',
+        value,
+      })
+    )
+  );
+
+  return merge(changes$, changesNotDebounced$, submits$).pipe(
     debounce(({ type }) =>
       type === 'SUBMIT' ? of(true) : of(true).pipe(delay(debounceTime))
     ),

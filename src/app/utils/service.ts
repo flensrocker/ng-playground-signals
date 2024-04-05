@@ -4,7 +4,9 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   Observable,
   catchError,
+  concatMap,
   map,
+  mergeMap,
   of,
   share,
   startWith,
@@ -55,29 +57,59 @@ export type ServiceState<TRequest, TResponse> = ServiceStateWithDefaultResponse<
   TResponse | undefined
 >;
 
+export type ServiceStateOptions = {
+  readonly behavior: 'SWITCH' | 'CONCAT' | 'MERGE';
+};
+
+export type ServiceStateOptionsWithDefaultResponse<TResponse> =
+  ServiceStateOptions & {
+    readonly defaultResponse: TResponse;
+  };
+
+const defaultServiceStateOptions: ServiceStateOptionsWithDefaultResponse<undefined> =
+  {
+    behavior: 'SWITCH',
+    defaultResponse: undefined,
+  };
+
 export function serviceState<TRequest, TResponse>(
   serviceRequest: Signal<TRequest> | Observable<TRequest>,
-  service: (request: TRequest) => Observable<TResponse>
+  service: (request: TRequest) => Observable<TResponse>,
+  options?: ServiceStateOptions
 ): ServiceState<TRequest, TResponse>;
 
 export function serviceState<TRequest, TResponse>(
   serviceRequest: Signal<TRequest> | Observable<TRequest>,
   service: (request: TRequest) => Observable<TResponse>,
-  defaultResponse: TResponse
+  options?: ServiceStateOptionsWithDefaultResponse<TResponse>
 ): ServiceStateWithDefaultResponse<TRequest, TResponse>;
 
 export function serviceState<TRequest, TResponse>(
   serviceRequest: Signal<TRequest> | Observable<TRequest>,
   service: (request: TRequest) => Observable<TResponse>,
-  defaultResponse?: TResponse
+  options?:
+    | ServiceStateOptions
+    | ServiceStateOptionsWithDefaultResponse<TResponse>
 ): ServiceState<TRequest, TResponse> {
+  const mergedOptions = {
+    ...defaultServiceStateOptions,
+    ...options,
+  };
+
   const serviceRequest$ = isSignal(serviceRequest)
     ? toObservable(serviceRequest)
     : serviceRequest;
 
+  const mapFn =
+    mergedOptions.behavior === 'CONCAT'
+      ? concatMap
+      : mergedOptions.behavior === 'MERGE'
+      ? mergeMap
+      : switchMap;
+
   const serviceCall = toSignal(
     serviceRequest$.pipe(
-      switchMap(
+      mapFn(
         (request): Observable<ServiceCallState<TRequest, TResponse>> =>
           service(request).pipe(
             map(
@@ -117,7 +149,7 @@ export function serviceState<TRequest, TResponse>(
     const searchState = serviceCall();
     return searchState.type === 'SUCCESS'
       ? searchState.response
-      : defaultResponse;
+      : mergedOptions.defaultResponse;
   });
   const hasError = computed(() => serviceCall().type === 'ERROR');
   const error = computed(() => {
