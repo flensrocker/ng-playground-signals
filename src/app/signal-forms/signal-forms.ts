@@ -15,8 +15,8 @@ type SignalPartial<T> = T extends object
     }
   : T;
 
-export const SIGNAL_FORM_CONTROL = Symbol('SignalFormControl');
-export const SIGNAL_FORM_GROUP = Symbol('SignalFormGroup');
+const SIGNAL_FORM_CONTROL = Symbol('SignalFormControl');
+const SIGNAL_FORM_GROUP = Symbol('SignalFormGroup');
 
 export type SignalFormStatus = 'VALID' | 'INVALID';
 export type SignalFormValidationErrors = Record<string, unknown>;
