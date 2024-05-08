@@ -22,6 +22,10 @@ export const routes: Routes = [
     loadChildren: () => import('./example').then((m) => m.EXAMPLE_ROUTES),
   },
   {
+    path: 'decider',
+    loadChildren: () => import('./decider').then((m) => m.DECIDER_ROUTES),
+  },
+  {
     path: '**',
     redirectTo: 'todo',
   },
