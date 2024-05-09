@@ -45,12 +45,28 @@ export type Typed<TType extends TypedType, T = unknown> = T & {
   readonly [TYPED]: TType;
 };
 
-export type OfTyped<T extends Typed<TypedType>> = T extends Typed<infer TType>
+export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
+  infer TType
+>
   ? TType
   : never;
 
+export type ValueOfTyped<T extends Typed<TypedType>> = Omit<T, typeof TYPED>;
+
+export function createTyped<T extends Typed<TypedType>>(
+  type: TypeOfTyped<T>,
+  value: ValueOfTyped<T>
+): T {
+  if (value === undefined) {
+    return { [TYPED]: type } as T;
+  }
+
+  (value as unknown as { [TYPED]: TypeOfTyped<T> })[TYPED] = type;
+  return value as unknown as T;
+}
+
 export type TypedDecide<
-  TCommand extends Typed<OfTyped<TCommand>>,
+  TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
   TEvent
 > = {
@@ -61,7 +77,7 @@ export type TypedDecide<
   >;
 };
 
-export type TypedEvolve<TState, TEvent extends Typed<OfTyped<TEvent>>> = {
+export type TypedEvolve<TState, TEvent extends Typed<TypeOfTyped<TEvent>>> = {
   readonly [K in TEvent[typeof TYPED]]: EvolveFn<
     TState,
     Extract<TEvent, { type: K }>
@@ -69,9 +85,9 @@ export type TypedEvolve<TState, TEvent extends Typed<OfTyped<TEvent>>> = {
 };
 
 export type TypedDecider<
-  TCommand extends Typed<OfTyped<TCommand>>,
+  TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
-  TEvent extends Typed<OfTyped<TEvent>>
+  TEvent extends Typed<TypeOfTyped<TEvent>>
 > = {
   readonly decide: TypedDecide<TCommand, TState, TEvent>;
   readonly evolve: TypedEvolve<TState, TEvent>;
@@ -79,9 +95,9 @@ export type TypedDecider<
 };
 
 export const typedDecide = <
-  TCommand extends Typed<OfTyped<TCommand>>,
+  TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
-  TEvent extends Typed<OfTyped<TEvent>>
+  TEvent extends Typed<TypeOfTyped<TEvent>>
 >(
   typedDecider: TypedDecider<TCommand, TState, TEvent>,
   command: TCommand,
@@ -92,9 +108,9 @@ export const typedDecide = <
 };
 
 export const typedEvolve = <
-  TCommand extends Typed<OfTyped<TCommand>>,
+  TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
-  TEvent extends Typed<OfTyped<TEvent>>
+  TEvent extends Typed<TypeOfTyped<TEvent>>
 >(
   typedDecider: TypedDecider<TCommand, TState, TEvent>,
   state: TState,
@@ -105,9 +121,9 @@ export const typedEvolve = <
 };
 
 export const createFromTypedDecider = <
-  TCommand extends Typed<OfTyped<TCommand>>,
+  TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
-  TEvent extends Typed<OfTyped<TEvent>>
+  TEvent extends Typed<TypeOfTyped<TEvent>>
 >(
   typedDecider: TypedDecider<TCommand, TState, TEvent>
 ): Decider<TCommand, TState, TEvent> => {
