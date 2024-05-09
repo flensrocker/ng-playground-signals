@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import {
   Decider,
   RunnableSignal,
-  TYPED,
   Typed,
   createFromTypedDecider,
+  createTyped,
   runInMemory,
 } from './decider';
 
@@ -23,13 +23,15 @@ export class DeciderComponent {
   }
 
   classifyNumber(classification: ClassificationType) {
-    this.#fizzBuzz.run({ [TYPED]: ClassifyNumberType, classification });
+    this.#fizzBuzz.run(
+      createTyped<ClassifyNumberCommand>(ClassifyNumberType, { classification })
+    );
   }
 }
 
 const NextNumberType = Symbol('NextNumber');
 type NextNumberCommand = Typed<typeof NextNumberType>;
-const nextNumber: NextNumberCommand = { [TYPED]: NextNumberType };
+const nextNumber = createTyped<NextNumberCommand>(NextNumberType);
 
 const CurrentUpdatedType = Symbol('CurrentUpdated');
 type CurrentUpdatedEvent = Typed<
@@ -64,7 +66,7 @@ type NumberClassifiedEvent = Typed<
 
 const ScoredType = Symbol('Scored');
 type ScoredEvent = Typed<typeof ScoredType>;
-const scoredEvent: ScoredEvent = { [TYPED]: ScoredType };
+const scoredEvent = createTyped<ScoredEvent>(ScoredType);
 
 type FizzBuzzCommand = NextNumberCommand | ClassifyNumberCommand;
 
@@ -91,7 +93,9 @@ const decideNextNumber = (
   command: NextNumberCommand,
   state: FizzBuzzState
 ): readonly FizzBuzzEvent[] => [
-  { [TYPED]: CurrentUpdatedType, current: state.current + 1 },
+  createTyped<CurrentUpdatedEvent>(CurrentUpdatedType, {
+    current: state.current + 1,
+  }),
 ];
 
 const decideClassifyNumber = (
@@ -101,11 +105,12 @@ const decideClassifyNumber = (
   const events: FizzBuzzEvent[] = [];
 
   const rightClassification = classifyNumber(state.current);
-  events.push({
-    [TYPED]: NumberClassifiedType,
-    providedClassification: command.classification,
-    rightClassification,
-  });
+  events.push(
+    createTyped<NumberClassifiedEvent>(NumberClassifiedType, {
+      providedClassification: command.classification,
+      rightClassification,
+    })
+  );
 
   if (command.classification === rightClassification) {
     events.push(scoredEvent);

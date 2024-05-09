@@ -41,9 +41,16 @@ export const TYPED = Symbol('Typed');
 
 export type TypedType = string | symbol;
 
-export type Typed<TType extends TypedType, T = unknown> = T & {
-  readonly [TYPED]: TType;
-};
+export type Typed<
+  TType extends TypedType,
+  TValue = undefined
+> = TValue extends undefined
+  ? {
+      readonly [TYPED]: TType;
+    }
+  : TValue & {
+      readonly [TYPED]: TType;
+    };
 
 export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
   infer TType
@@ -53,16 +60,23 @@ export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
 
 export type ValueOfTyped<T extends Typed<TypedType>> = Omit<T, typeof TYPED>;
 
-export function createTyped<T extends Typed<TypedType>>(
+export function createTyped<
+  T extends Typed<TypeOfTyped<T>, ValueOfTyped<Typed<TypeOfTyped<T>>>>
+>(type: TypeOfTyped<T>): Typed<TypeOfTyped<T>>;
+export function createTyped<T extends Typed<TypeOfTyped<T>, ValueOfTyped<T>>>(
   type: TypeOfTyped<T>,
   value: ValueOfTyped<T>
+): T;
+export function createTyped<T extends Typed<TypeOfTyped<T>, ValueOfTyped<T>>>(
+  type: TypeOfTyped<T>,
+  value?: ValueOfTyped<T>
 ): T {
   if (value === undefined) {
     return { [TYPED]: type } as T;
   }
 
   (value as unknown as { [TYPED]: TypeOfTyped<T> })[TYPED] = type;
-  return value as unknown as T;
+  return value as T;
 }
 
 export type TypedDecide<
