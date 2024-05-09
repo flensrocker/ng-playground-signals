@@ -16,7 +16,7 @@ import {
 })
 export class DeciderComponent {
   readonly #fizzBuzz = runInMemory(fizzBuzzDecider);
-  protected readonly vm = fizzBuzzViewModel(this.#fizzBuzz);
+  protected readonly vm = createFizzBuzzViewModel(this.#fizzBuzz);
 
   nextNumber() {
     this.#fizzBuzz.run(nextNumber);
@@ -29,11 +29,11 @@ export class DeciderComponent {
   }
 }
 
-const NextNumberType = Symbol('NextNumber');
+const NextNumberType = Symbol('NextNumberCommand');
 type NextNumberCommand = Typed<typeof NextNumberType>;
 const nextNumber = createTyped<NextNumberCommand>(NextNumberType);
 
-const CurrentUpdatedType = Symbol('CurrentUpdated');
+const CurrentUpdatedType = Symbol('CurrentUpdatedEvent');
 type CurrentUpdatedEvent = Typed<
   typeof CurrentUpdatedType,
   { readonly current: number }
@@ -49,13 +49,13 @@ const classifyNumber = (current: number): ClassificationType => {
   return isFizzBuzz ? 'FizzBuzz' : isBuzz ? 'Buzz' : isFizz ? 'Fizz' : 'Number';
 };
 
-const ClassifyNumberType = Symbol('ClassifyNumber');
+const ClassifyNumberType = Symbol('ClassifyNumberCommand');
 type ClassifyNumberCommand = Typed<
   typeof ClassifyNumberType,
   { readonly classification: ClassificationType }
 >;
 
-const NumberClassifiedType = Symbol('NumberClassified');
+const NumberClassifiedType = Symbol('NumberClassifiedEvent');
 type NumberClassifiedEvent = Typed<
   typeof NumberClassifiedType,
   {
@@ -64,7 +64,7 @@ type NumberClassifiedEvent = Typed<
   }
 >;
 
-const ScoredType = Symbol('Scored');
+const ScoredType = Symbol('ScoredEvent');
 type ScoredEvent = Typed<typeof ScoredType>;
 const scoredEvent = createTyped<ScoredEvent>(ScoredType);
 
@@ -170,7 +170,7 @@ const fizzBuzzDecider: FizzBuzzDecider = createFromTypedDecider<
 
 type StepType = 'Guess' | 'Right' | 'Wrong';
 
-const fizzBuzzViewModel = ($fizzBuzz: FizzBuzzSignal) => {
+const createFizzBuzzViewModel = ($fizzBuzz: FizzBuzzSignal) => {
   const current = computed(() => $fizzBuzz().current);
   const score = computed(() => $fizzBuzz().score);
   const step = computed((): StepType => {
