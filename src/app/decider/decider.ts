@@ -37,6 +37,8 @@ export function runInMemory<TCommand, TState, TEvent>(
   return s as RunnableSignal<TCommand, TState>;
 }
 
+// ----- Helper types and functions to create types with common type discriminator
+
 export const TYPED = Symbol('Typed');
 
 export type TypedType = string | symbol;
@@ -79,6 +81,8 @@ export function createTyped<T extends Typed<TypeOfTyped<T>, ValueOfTyped<T>>>(
   return value as T;
 }
 
+// ----- Helper types and functions to create a decider from "Typed" types
+
 export type TypedDecide<
   TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
@@ -108,30 +112,30 @@ export type TypedDecider<
   readonly initialState: TState;
 };
 
-export const typedDecide = <
+const typedDecide = <
   TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
   TEvent extends Typed<TypeOfTyped<TEvent>>
 >(
-  typedDecider: TypedDecider<TCommand, TState, TEvent>,
-  command: TCommand,
-  state: TState
-): ReturnType<DecideFn<TCommand, TState, TEvent>> => {
-  const decide = typedDecider.decide[command[TYPED]];
-  return (decide as DecideFn<TCommand, TState, TEvent>)(command, state);
+  typedDecider: TypedDecider<TCommand, TState, TEvent>
+): DecideFn<TCommand, TState, TEvent> => {
+  return (command, state) => {
+    const decide = typedDecider.decide[command[TYPED]];
+    return (decide as DecideFn<TCommand, TState, TEvent>)(command, state);
+  };
 };
 
-export const typedEvolve = <
+const typedEvolve = <
   TCommand extends Typed<TypeOfTyped<TCommand>>,
   TState,
   TEvent extends Typed<TypeOfTyped<TEvent>>
 >(
-  typedDecider: TypedDecider<TCommand, TState, TEvent>,
-  state: TState,
-  event: TEvent
-): ReturnType<EvolveFn<TState, TEvent>> => {
-  const evolve = typedDecider.evolve[event[TYPED]];
-  return (evolve as EvolveFn<TState, TEvent>)(state, event);
+  typedDecider: TypedDecider<TCommand, TState, TEvent>
+): EvolveFn<TState, TEvent> => {
+  return (state, event) => {
+    const evolve = typedDecider.evolve[event[TYPED]];
+    return (evolve as EvolveFn<TState, TEvent>)(state, event);
+  };
 };
 
 export const createFromTypedDecider = <
@@ -142,8 +146,8 @@ export const createFromTypedDecider = <
   typedDecider: TypedDecider<TCommand, TState, TEvent>
 ): Decider<TCommand, TState, TEvent> => {
   return {
-    decide: (c, s) => typedDecide(typedDecider, c, s),
-    evolve: (s, e) => typedEvolve(typedDecider, s, e),
+    decide: typedDecide(typedDecider),
+    evolve: typedEvolve(typedDecider),
     initialState: typedDecider.initialState,
   };
 };
