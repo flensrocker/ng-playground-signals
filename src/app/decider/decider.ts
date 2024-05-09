@@ -37,11 +37,15 @@ export function runInMemory<TCommand, TState, TEvent>(
   return s as RunnableSignal<TCommand, TState>;
 }
 
-export type Typed<TType extends string, T = unknown> = T & {
-  readonly type: TType;
+export const TYPED = Symbol('Typed');
+
+export type TypedType = string | symbol;
+
+export type Typed<TType extends TypedType, T = unknown> = T & {
+  readonly [TYPED]: TType;
 };
 
-export type OfTyped<T extends Typed<string>> = T extends Typed<infer TType>
+export type OfTyped<T extends Typed<TypedType>> = T extends Typed<infer TType>
   ? TType
   : never;
 
@@ -50,7 +54,7 @@ export type TypedDecide<
   TState,
   TEvent
 > = {
-  readonly [K in TCommand['type']]: DecideFn<
+  readonly [K in TCommand[typeof TYPED]]: DecideFn<
     Extract<TCommand, { type: K }>,
     TState,
     TEvent
@@ -58,7 +62,7 @@ export type TypedDecide<
 };
 
 export type TypedEvolve<TState, TEvent extends Typed<OfTyped<TEvent>>> = {
-  readonly [K in TEvent['type']]: EvolveFn<
+  readonly [K in TEvent[typeof TYPED]]: EvolveFn<
     TState,
     Extract<TEvent, { type: K }>
   >;
@@ -83,7 +87,7 @@ export const typedDecide = <
   command: TCommand,
   state: TState
 ): ReturnType<DecideFn<TCommand, TState, TEvent>> => {
-  const decide = typedDecider.decide[command.type];
+  const decide = typedDecider.decide[command[TYPED]];
   return (decide as DecideFn<TCommand, TState, TEvent>)(command, state);
 };
 
@@ -96,7 +100,7 @@ export const typedEvolve = <
   state: TState,
   event: TEvent
 ): ReturnType<EvolveFn<TState, TEvent>> => {
-  const evolve = typedDecider.evolve[event.type];
+  const evolve = typedDecider.evolve[event[TYPED]];
   return (evolve as EvolveFn<TState, TEvent>)(state, event);
 };
 

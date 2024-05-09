@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import {
   Decider,
   RunnableSignal,
+  TYPED,
   Typed,
   createFromTypedDecider,
   runInMemory,
@@ -22,15 +23,17 @@ export class DeciderComponent {
   }
 
   classifyNumber(classification: ClassificationType) {
-    this.#fizzBuzz.run({ type: 'ClassifyNumber', classification });
+    this.#fizzBuzz.run({ [TYPED]: ClassifyNumberType, classification });
   }
 }
 
-type NextNumberCommand = Typed<'NextNumber'>;
-const nextNumber: NextNumberCommand = { type: 'NextNumber' };
+const NextNumberType = Symbol('NextNumber');
+type NextNumberCommand = Typed<typeof NextNumberType>;
+const nextNumber: NextNumberCommand = { [TYPED]: NextNumberType };
 
+const CurrentUpdatedType = Symbol('CurrentUpdated');
 type CurrentUpdatedEvent = Typed<
-  'CurrentUpdated',
+  typeof CurrentUpdatedType,
   { readonly current: number }
 >;
 
@@ -44,21 +47,24 @@ const classifyNumber = (current: number): ClassificationType => {
   return isFizzBuzz ? 'FizzBuzz' : isBuzz ? 'Buzz' : isFizz ? 'Fizz' : 'Number';
 };
 
+const ClassifyNumberType = Symbol('ClassifyNumber');
 type ClassifyNumberCommand = Typed<
-  'ClassifyNumber',
+  typeof ClassifyNumberType,
   { readonly classification: ClassificationType }
 >;
 
+const NumberClassifiedType = Symbol('NumberClassified');
 type NumberClassifiedEvent = Typed<
-  'NumberClassified',
+  typeof NumberClassifiedType,
   {
     readonly providedClassification: ClassificationType;
     readonly rightClassification: ClassificationType;
   }
 >;
 
-type ScoredEvent = Typed<'Scored'>;
-const scoredEvent: ScoredEvent = { type: 'Scored' };
+const ScoredType = Symbol('Scored');
+type ScoredEvent = Typed<typeof ScoredType>;
+const scoredEvent: ScoredEvent = { [TYPED]: ScoredType };
 
 type FizzBuzzCommand = NextNumberCommand | ClassifyNumberCommand;
 
@@ -85,7 +91,7 @@ const decideNextNumber = (
   command: NextNumberCommand,
   state: FizzBuzzState
 ): readonly FizzBuzzEvent[] => [
-  { type: 'CurrentUpdated', current: state.current + 1 },
+  { [TYPED]: CurrentUpdatedType, current: state.current + 1 },
 ];
 
 const decideClassifyNumber = (
@@ -96,7 +102,7 @@ const decideClassifyNumber = (
 
   const rightClassification = classifyNumber(state.current);
   events.push({
-    type: 'NumberClassified',
+    [TYPED]: NumberClassifiedType,
     providedClassification: command.classification,
     rightClassification,
   });
@@ -146,13 +152,13 @@ const fizzBuzzDecider: FizzBuzzDecider = createFromTypedDecider<
   FizzBuzzEvent
 >({
   decide: {
-    ClassifyNumber: decideClassifyNumber,
-    NextNumber: decideNextNumber,
+    [ClassifyNumberType]: decideClassifyNumber,
+    [NextNumberType]: decideNextNumber,
   },
   evolve: {
-    CurrentUpdated: evolveCurrentUpdated,
-    NumberClassified: evolveNumberClassified,
-    Scored: evolveScored,
+    [CurrentUpdatedType]: evolveCurrentUpdated,
+    [NumberClassifiedType]: evolveNumberClassified,
+    [ScoredType]: evolveScored,
   },
   initialState,
 });
