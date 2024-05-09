@@ -1,0 +1,54 @@
+<h1>Fizz-Buzz-Decider</h1>
+
+<div>Current number: {{ vm.current() }}</div>
+
+<div>
+  <button
+    type="button"
+    [disabled]="vm.classifiedDisabled()"
+    (click)="classifyNumber('Number')"
+  >
+    is number
+  </button>
+  <button
+    type="button"
+    [disabled]="vm.classifiedDisabled()"
+    (click)="classifyNumber('Fizz')"
+  >
+    is Fizz
+  </button>
+  <button
+    type="button"
+    [disabled]="vm.classifiedDisabled()"
+    (click)="classifyNumber('Buzz')"
+  >
+    is Buzz
+  </button>
+  <button
+    type="button"
+    [disabled]="vm.classifiedDisabled()"
+    (click)="classifyNumber('FizzBuzz')"
+  >
+    is FizzBuzz
+  </button>
+</div>
+
+<div>
+  <button
+    type="button"
+    [disabled]="vm.nextNumberDisabled()"
+    (click)="nextNumber()"
+  >
+    next number
+  </button>
+</div>
+
+@switch (vm.step()) { @case ('Guess') {
+<div>Make your guess! 🤔</div>
+} @case ('Right') {
+<div>You're right! 😂</div>
+} @case ('Wrong') {
+<div>That was wrong... 😢</div>
+} }
+
+<div>Your score: {{ vm.score() }}</div>
