@@ -20,7 +20,7 @@ export class DeciderComponent {
   }
 }
 
-type NextNumberCommand = Typed<'NextNumber', unknown>;
+type NextNumberCommand = Typed<'NextNumber'>;
 const nextNumber: NextNumberCommand = { type: 'NextNumber' };
 
 type CurrentUpdatedEvent = Typed<
@@ -29,6 +29,14 @@ type CurrentUpdatedEvent = Typed<
 >;
 
 type ClassificationType = 'Number' | 'Fizz' | 'Buzz' | 'FizzBuzz';
+
+const classifyNumber = (current: number): ClassificationType => {
+  const isFizz = current % 3 === 0;
+  const isBuzz = current % 5 === 0;
+  const isFizzBuzz = isFizz && isBuzz;
+
+  return isFizzBuzz ? 'FizzBuzz' : isBuzz ? 'Buzz' : isFizz ? 'Fizz' : 'Number';
+};
 
 type ClassifyNumberCommand = Typed<
   'ClassifyNumber',
@@ -43,7 +51,7 @@ type NumberClassifiedEvent = Typed<
   }
 >;
 
-type ScoredEvent = Typed<'Scored', unknown>;
+type ScoredEvent = Typed<'Scored'>;
 const scoredEvent: ScoredEvent = { type: 'Scored' };
 
 type FizzBuzzCommand = NextNumberCommand | ClassifyNumberCommand;
@@ -57,12 +65,11 @@ type FizzBuzzState = {
   readonly score: number;
 };
 
-const classifyNumber = (current: number): ClassificationType => {
-  const isFizz = current % 3 === 0;
-  const isBuzz = current % 5 === 0;
-  const isFizzBuzz = isFizz && isBuzz;
-
-  return isFizzBuzz ? 'FizzBuzz' : isBuzz ? 'Buzz' : isFizz ? 'Fizz' : 'Number';
+const initialState: FizzBuzzState = {
+  current: 1,
+  rightClassification: classifyNumber(1),
+  providedClassification: null,
+  score: 0,
 };
 
 type FizzBuzzDecider = Decider<FizzBuzzCommand, FizzBuzzState, FizzBuzzEvent>;
@@ -95,6 +102,38 @@ const decideClassifyNumber = (
   return events;
 };
 
+const evolveCurrentUpdated = (
+  state: FizzBuzzState,
+  event: CurrentUpdatedEvent
+): FizzBuzzState => {
+  return {
+    ...state,
+    current: event.current,
+    providedClassification: null,
+  };
+};
+
+const evolveNumberClassified = (
+  state: FizzBuzzState,
+  event: NumberClassifiedEvent
+): FizzBuzzState => {
+  return {
+    ...state,
+    rightClassification: event.rightClassification,
+    providedClassification: event.providedClassification,
+  };
+};
+
+const evolveScored = (
+  state: FizzBuzzState,
+  event: ScoredEvent
+): FizzBuzzState => {
+  return {
+    ...state,
+    score: state.score + 1,
+  };
+};
+
 const fizzBuzzDecider: FizzBuzzDecider = {
   decide: (command, state) => {
     switch (command.type) {
@@ -109,33 +148,17 @@ const fizzBuzzDecider: FizzBuzzDecider = {
   evolve: (state, event) => {
     switch (event.type) {
       case 'CurrentUpdated': {
-        return {
-          ...state,
-          current: event.current,
-          providedClassification: null,
-        };
+        return evolveCurrentUpdated(state, event);
       }
       case 'NumberClassified': {
-        return {
-          ...state,
-          rightClassification: event.rightClassification,
-          providedClassification: event.providedClassification,
-        };
+        return evolveNumberClassified(state, event);
       }
       case 'Scored': {
-        return {
-          ...state,
-          score: state.score + 1,
-        };
+        return evolveScored(state, event);
       }
     }
   },
-  initialState: {
-    current: 1,
-    rightClassification: classifyNumber(1),
-    providedClassification: null,
-    score: 0,
-  },
+  initialState,
 };
 
 type StepType = 'Guess' | 'Right' | 'Wrong';
