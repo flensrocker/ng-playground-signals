@@ -40,3 +40,76 @@ export function runInMemory<TCommand, TState, TEvent>(
 export type Typed<TType extends string, T = unknown> = T & {
   readonly type: TType;
 };
+
+export type OfTyped<T extends Typed<string>> = T extends Typed<infer TType>
+  ? TType
+  : never;
+
+export type TypedDecide<
+  TCommand extends Typed<OfTyped<TCommand>>,
+  TState,
+  TEvent
+> = {
+  readonly [K in TCommand['type']]: DecideFn<
+    Extract<TCommand, { type: K }>,
+    TState,
+    TEvent
+  >;
+};
+
+export type TypedEvolve<TState, TEvent extends Typed<OfTyped<TEvent>>> = {
+  readonly [K in TEvent['type']]: EvolveFn<
+    TState,
+    Extract<TEvent, { type: K }>
+  >;
+};
+
+export type TypedDecider<
+  TCommand extends Typed<OfTyped<TCommand>>,
+  TState,
+  TEvent extends Typed<OfTyped<TEvent>>
+> = {
+  readonly decide: TypedDecide<TCommand, TState, TEvent>;
+  readonly evolve: TypedEvolve<TState, TEvent>;
+  readonly initialState: TState;
+};
+
+export const typedDecide = <
+  TCommand extends Typed<OfTyped<TCommand>>,
+  TState,
+  TEvent extends Typed<OfTyped<TEvent>>
+>(
+  typedDecider: TypedDecider<TCommand, TState, TEvent>,
+  command: TCommand,
+  state: TState
+): ReturnType<DecideFn<TCommand, TState, TEvent>> => {
+  const decide = typedDecider.decide[command.type];
+  return (decide as DecideFn<TCommand, TState, TEvent>)(command, state);
+};
+
+export const typedEvolve = <
+  TCommand extends Typed<OfTyped<TCommand>>,
+  TState,
+  TEvent extends Typed<OfTyped<TEvent>>
+>(
+  typedDecider: TypedDecider<TCommand, TState, TEvent>,
+  state: TState,
+  event: TEvent
+): ReturnType<EvolveFn<TState, TEvent>> => {
+  const evolve = typedDecider.evolve[event.type];
+  return (evolve as EvolveFn<TState, TEvent>)(state, event);
+};
+
+export const createFromTypedDecider = <
+  TCommand extends Typed<OfTyped<TCommand>>,
+  TState,
+  TEvent extends Typed<OfTyped<TEvent>>
+>(
+  typedDecider: TypedDecider<TCommand, TState, TEvent>
+): Decider<TCommand, TState, TEvent> => {
+  return {
+    decide: (c, s) => typedDecide(typedDecider, c, s),
+    evolve: (s, e) => typedEvolve(typedDecider, s, e),
+    initialState: typedDecider.initialState,
+  };
+};

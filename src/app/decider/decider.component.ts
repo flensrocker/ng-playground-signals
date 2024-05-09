@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
-import { Decider, RunnableSignal, Typed, runInMemory } from './decider';
+import {
+  Decider,
+  RunnableSignal,
+  Typed,
+  createFromTypedDecider,
+  runInMemory,
+} from './decider';
 
 @Component({
   standalone: true,
@@ -134,32 +140,22 @@ const evolveScored = (
   };
 };
 
-const fizzBuzzDecider: FizzBuzzDecider = {
-  decide: (command, state) => {
-    switch (command.type) {
-      case 'NextNumber': {
-        return decideNextNumber(command, state);
-      }
-      case 'ClassifyNumber': {
-        return decideClassifyNumber(command, state);
-      }
-    }
+const fizzBuzzDecider: FizzBuzzDecider = createFromTypedDecider<
+  FizzBuzzCommand,
+  FizzBuzzState,
+  FizzBuzzEvent
+>({
+  decide: {
+    ClassifyNumber: decideClassifyNumber,
+    NextNumber: decideNextNumber,
   },
-  evolve: (state, event) => {
-    switch (event.type) {
-      case 'CurrentUpdated': {
-        return evolveCurrentUpdated(state, event);
-      }
-      case 'NumberClassified': {
-        return evolveNumberClassified(state, event);
-      }
-      case 'Scored': {
-        return evolveScored(state, event);
-      }
-    }
+  evolve: {
+    CurrentUpdated: evolveCurrentUpdated,
+    NumberClassified: evolveNumberClassified,
+    Scored: evolveScored,
   },
   initialState,
-};
+});
 
 type StepType = 'Guess' | 'Right' | 'Wrong';
 
