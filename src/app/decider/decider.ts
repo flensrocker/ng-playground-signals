@@ -15,13 +15,14 @@ export type Decider<TCommand, TState, TEvent> = {
 
 export type RunCommandFn<TCommand> = (command: TCommand) => void;
 
-export type RunnableSignal<TCommand, TState> = Signal<TState> & {
+export type DeciderRunner<TCommand, TState> = {
+  readonly $state: Signal<TState>;
   readonly run: RunCommandFn<TCommand>;
 };
 
 export function runInMemory<TCommand, TState, TEvent>(
   decider: Decider<TCommand, TState, TEvent>
-): RunnableSignal<TCommand, TState> {
+): DeciderRunner<TCommand, TState> {
   const $state = signal(decider.initialState);
 
   const run: RunCommandFn<TCommand> = (command) => {
@@ -32,9 +33,10 @@ export function runInMemory<TCommand, TState, TEvent>(
     });
   };
 
-  const s = $state.asReadonly();
-  (s as unknown as { run: RunCommandFn<TCommand> })['run'] = run;
-  return s as RunnableSignal<TCommand, TState>;
+  return {
+    $state: $state.asReadonly(),
+    run,
+  };
 }
 
 // ----- Helper types and functions to create types with common type discriminator

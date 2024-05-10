@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import {
   Decider,
-  RunnableSignal,
+  DeciderRunner,
   Typed,
   createFromTypedDecider,
   createTyped,
@@ -87,7 +87,7 @@ const initialState: FizzBuzzState = {
 };
 
 type FizzBuzzDecider = Decider<FizzBuzzCommand, FizzBuzzState, FizzBuzzEvent>;
-type FizzBuzzSignal = RunnableSignal<FizzBuzzCommand, FizzBuzzState>;
+type FizzBuzzRunner = DeciderRunner<FizzBuzzCommand, FizzBuzzState>;
 
 const decideNextNumber = (
   command: NextNumberCommand,
@@ -170,11 +170,11 @@ const fizzBuzzDecider: FizzBuzzDecider = createFromTypedDecider<
 
 type StepType = 'Guess' | 'Right' | 'Wrong';
 
-const createFizzBuzzViewModel = ($fizzBuzz: FizzBuzzSignal) => {
-  const current = computed(() => $fizzBuzz().current);
-  const score = computed(() => $fizzBuzz().score);
+const createFizzBuzzViewModel = ($fizzBuzz: FizzBuzzRunner) => {
+  const current = computed(() => $fizzBuzz.$state().current);
+  const score = computed(() => $fizzBuzz.$state().score);
   const step = computed((): StepType => {
-    const state = $fizzBuzz();
+    const state = $fizzBuzz.$state();
 
     if (state.providedClassification == null) {
       return 'Guess';
