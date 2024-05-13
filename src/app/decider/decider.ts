@@ -42,6 +42,7 @@ export function runInMemory<TCommand, TState, TEvent>(
 // ----- Helper types and functions to create types with common type discriminator
 
 export const TYPED = Symbol('Typed');
+export const TYPEDVALUE = Symbol('TypedValue');
 
 export type TypedType = string | symbol;
 
@@ -49,7 +50,9 @@ export type Typed<TType extends TypedType> = {
   readonly [TYPED]: TType;
 };
 
-export type TypedValue<TType extends TypedType, TValue> = Typed<TType> & TValue;
+export type TypedValue<TType extends TypedType, TValue> = Typed<TType> & {
+  [TYPEDVALUE]: TValue;
+} & TValue;
 
 export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
   infer TType
@@ -57,25 +60,29 @@ export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
   ? TType
   : never;
 
-export type ValueOfTyped<T extends TypedValue<TypedType, unknown>> = Omit<
-  T,
-  typeof TYPED
->;
+export type ValueOfTyped<T extends Typed<TypedType>> = T extends TypedValue<
+  TypedType,
+  infer TValue
+>
+  ? TValue
+  : undefined;
 
 export function createTyped<T extends Typed<TypeOfTyped<T>>>(
   type: TypeOfTyped<T>
 ): Typed<TypeOfTyped<T>>;
-export function createTyped<
-  T extends TypedValue<TypeOfTyped<T>, ValueOfTyped<T>>
->(type: TypeOfTyped<T>, value: ValueOfTyped<T>): T;
-export function createTyped<
-  T extends TypedValue<TypeOfTyped<T>, ValueOfTyped<T>>
->(type: TypeOfTyped<T>, value?: ValueOfTyped<T>): T {
+export function createTyped<T extends TypedValue<TypedType, unknown>>(
+  type: TypeOfTyped<T>,
+  value: ValueOfTyped<T>
+): T;
+export function createTyped<T extends Typed<TypedType>>(
+  type: TypeOfTyped<T>,
+  value?: ValueOfTyped<T>
+): T {
   if (value === undefined) {
     return { [TYPED]: type } as T;
   }
 
-  (value as unknown as { [TYPED]: TypeOfTyped<T> })[TYPED] = type;
+  (value as { [TYPED]: TypeOfTyped<T> })[TYPED] = type;
   return value as T;
 }
 
