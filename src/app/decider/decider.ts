@@ -81,9 +81,9 @@ export function createTyped<
 
 export const isTypedAs = <T extends Typed<TypedType>>(
   type: TypeOfTyped<T>,
-  value: Typed<TypedType> | null | undefined
-): value is T => {
-  return value != null && value[TYPED] === type;
+  obj: Typed<TypedType> | null | undefined
+): obj is T => {
+  return obj != null && obj[TYPED] === type;
 };
 
 // ----- Helper types and functions to create a decider from "Typed" types
