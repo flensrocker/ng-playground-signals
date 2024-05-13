@@ -1,12 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
-import {
-  Decider,
-  DeciderRunner,
-  Typed,
-  createFromTypedDecider,
-  createTyped,
-  runInMemory,
-} from './decider';
+import type { Decider, DeciderRunner, TypedValue, Typed } from './decider';
+import { createFromTypedDecider, createTyped, runInMemory } from './decider';
 
 @Component({
   standalone: true,
@@ -34,7 +28,7 @@ type NextNumberCommand = Typed<typeof NextNumberType>;
 const nextNumber = createTyped<NextNumberCommand>(NextNumberType);
 
 const CurrentUpdatedType = Symbol('CurrentUpdatedEvent');
-type CurrentUpdatedEvent = Typed<
+type CurrentUpdatedEvent = TypedValue<
   typeof CurrentUpdatedType,
   { readonly current: number }
 >;
@@ -50,13 +44,13 @@ const classifyNumber = (current: number): ClassificationType => {
 };
 
 const ClassifyNumberType = Symbol('ClassifyNumberCommand');
-type ClassifyNumberCommand = Typed<
+type ClassifyNumberCommand = TypedValue<
   typeof ClassifyNumberType,
   { readonly classification: ClassificationType }
 >;
 
 const NumberClassifiedType = Symbol('NumberClassifiedEvent');
-type NumberClassifiedEvent = Typed<
+type NumberClassifiedEvent = TypedValue<
   typeof NumberClassifiedType,
   {
     readonly providedClassification: ClassificationType;

@@ -45,16 +45,11 @@ export const TYPED = Symbol('Typed');
 
 export type TypedType = string | symbol;
 
-export type Typed<
-  TType extends TypedType,
-  TValue = undefined
-> = TValue extends undefined
-  ? {
-      readonly [TYPED]: TType;
-    }
-  : TValue & {
-      readonly [TYPED]: TType;
-    };
+export type Typed<TType extends TypedType> = {
+  readonly [TYPED]: TType;
+};
+
+export type TypedValue<TType extends TypedType, TValue> = Typed<TType> & TValue;
 
 export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
   infer TType
@@ -62,19 +57,20 @@ export type TypeOfTyped<T extends Typed<TypedType>> = T extends Typed<
   ? TType
   : never;
 
-export type ValueOfTyped<T extends Typed<TypedType>> = Omit<T, typeof TYPED>;
+export type ValueOfTyped<T extends TypedValue<TypedType, unknown>> = Omit<
+  T,
+  typeof TYPED
+>;
 
+export function createTyped<T extends Typed<TypeOfTyped<T>>>(
+  type: TypeOfTyped<T>
+): Typed<TypeOfTyped<T>>;
 export function createTyped<
-  T extends Typed<TypeOfTyped<T>, ValueOfTyped<Typed<TypeOfTyped<T>>>>
->(type: TypeOfTyped<T>): Typed<TypeOfTyped<T>>;
-export function createTyped<T extends Typed<TypeOfTyped<T>, ValueOfTyped<T>>>(
-  type: TypeOfTyped<T>,
-  value: ValueOfTyped<T>
-): T;
-export function createTyped<T extends Typed<TypeOfTyped<T>, ValueOfTyped<T>>>(
-  type: TypeOfTyped<T>,
-  value?: ValueOfTyped<T>
-): T {
+  T extends TypedValue<TypeOfTyped<T>, ValueOfTyped<T>>
+>(type: TypeOfTyped<T>, value: ValueOfTyped<T>): T;
+export function createTyped<
+  T extends TypedValue<TypeOfTyped<T>, ValueOfTyped<T>>
+>(type: TypeOfTyped<T>, value?: ValueOfTyped<T>): T {
   if (value === undefined) {
     return { [TYPED]: type } as T;
   }
@@ -82,6 +78,13 @@ export function createTyped<T extends Typed<TypeOfTyped<T>, ValueOfTyped<T>>>(
   (value as unknown as { [TYPED]: TypeOfTyped<T> })[TYPED] = type;
   return value as T;
 }
+
+export const isTypedAs = <T extends Typed<TypedType>>(
+  type: TypeOfTyped<T>,
+  value: Typed<TypedType> | null | undefined
+): value is T => {
+  return value != null && value[TYPED] === type;
+};
 
 // ----- Helper types and functions to create a decider from "Typed" types
 
